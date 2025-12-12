@@ -77,6 +77,13 @@ A Next.js-based budget tracking application that allows users to import, categor
 - File modified:
   - `components/budget-list.tsx`
 
+**2025-12-12: Rounded numbers in spending by category chart**
+- Pie chart labels now show rounded dollar amounts (no decimals)
+- Labels hidden for slices < 5% to reduce clutter
+- Tooltip still shows precise amounts with 2 decimals
+- File modified:
+  - `components/spending-by-category.tsx`
+
 **2025-12-12: Implemented category rules system with advanced conditions**
 - Created category_rules database table with full schema
 - Rules now support multiple condition types that can be combined

@@ -82,7 +82,19 @@ export function SpendingByCategory({ transactions }: SpendingByCategoryProps) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={chartData} dataKey="amount" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+              <Pie
+                data={chartData}
+                dataKey="amount"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                label={({ name, value, percent }) => {
+                  if (percent < 0.05) return null // Hide labels for slices < 5%
+                  return `$${Number(value).toFixed(0)}`
+                }}
+                labelLine={false}
+              >
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
