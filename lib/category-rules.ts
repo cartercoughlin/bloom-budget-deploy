@@ -4,10 +4,21 @@ export interface CategoryRule {
   id?: string
   user_id: string
   name: string
-  description_pattern: string
   category_id: string
   priority: number
   is_active: boolean
+
+  // Condition fields (optional - at least one required)
+  description_pattern?: string | null
+  amount_min?: number | null
+  amount_max?: number | null
+  transaction_type?: 'debit' | 'credit' | null
+  bank_pattern?: string | null
+  account_pattern?: string | null
+  institution_pattern?: string | null
+
+  created_at?: string
+  updated_at?: string
 }
 
 export interface SmartAssignment {
@@ -35,22 +46,98 @@ export async function createCategoryRule(rule: Omit<CategoryRule, 'id'>): Promis
 }
 
 export async function getCategoryRules(userId: string): Promise<CategoryRule[]> {
-  // TODO: Create category_rules table in database
-  console.log('Category rules table not yet created')
-  return []
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('category_rules')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .order('priority', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching category rules:', error)
+    return []
+  }
+
+  return data || []
 }
 
-export async function assignCategoryByRules(description: string, userId: string): Promise<string | null> {
+interface Transaction {
+  description: string
+  amount: number
+  transaction_type: 'debit' | 'credit'
+  bank?: string
+  account?: string
+  institution?: string
+}
+
+export async function assignCategoryByRules(transaction: Transaction, userId: string): Promise<string | null> {
   const rules = await getCategoryRules(userId)
-  
+
   for (const rule of rules) {
-    const pattern = new RegExp(rule.description_pattern, 'i')
-    if (pattern.test(description)) {
+    if (matchesRule(transaction, rule)) {
       return rule.category_id
     }
   }
-  
+
   return null
+}
+
+function matchesRule(transaction: Transaction, rule: CategoryRule): boolean {
+  // Check description pattern
+  if (rule.description_pattern) {
+    const pattern = new RegExp(rule.description_pattern, 'i')
+    if (!pattern.test(transaction.description)) {
+      return false
+    }
+  }
+
+  // Check amount range
+  if (rule.amount_min !== null && rule.amount_min !== undefined) {
+    if (transaction.amount < rule.amount_min) {
+      return false
+    }
+  }
+  if (rule.amount_max !== null && rule.amount_max !== undefined) {
+    if (transaction.amount > rule.amount_max) {
+      return false
+    }
+  }
+
+  // Check transaction type
+  if (rule.transaction_type) {
+    if (transaction.transaction_type !== rule.transaction_type) {
+      return false
+    }
+  }
+
+  // Check bank pattern
+  if (rule.bank_pattern && transaction.bank) {
+    const pattern = new RegExp(rule.bank_pattern, 'i')
+    if (!pattern.test(transaction.bank)) {
+      return false
+    }
+  }
+
+  // Check account pattern
+  if (rule.account_pattern && transaction.account) {
+    const pattern = new RegExp(rule.account_pattern, 'i')
+    if (!pattern.test(transaction.account)) {
+      return false
+    }
+  }
+
+  // Check institution pattern
+  if (rule.institution_pattern && transaction.institution) {
+    const pattern = new RegExp(rule.institution_pattern, 'i')
+    if (!pattern.test(transaction.institution)) {
+      return false
+    }
+  }
+
+  // All specified conditions matched
+  return true
 }
 
 export async function learnFromAssignment(transactionId: string, categoryId: string, userId: string) {

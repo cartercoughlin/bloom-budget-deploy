@@ -47,8 +47,9 @@ interface BudgetListProps {
   year: number
 }
 
-export function BudgetList({ budgets: initialBudgets, categories, spending, month, year }: BudgetListProps) {
+export function BudgetList({ budgets: initialBudgets, categories: initialCategories, spending, month, year }: BudgetListProps) {
   const [budgets, setBudgets] = useState(initialBudgets)
+  const [categories, setCategories] = useState(initialCategories)
   const [isOpen, setIsOpen] = useState(false)
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState("")
@@ -74,7 +75,18 @@ export function BudgetList({ budgets: initialBudgets, categories, spending, mont
 
   const percentageThroughMonth = getPercentageThroughMonth()
 
-  const handleOpenDialog = (budget?: Budget) => {
+  const fetchLatestCategories = async () => {
+    const supabase = createClient()
+    const { data } = await supabase.from("categories").select("*").order("name")
+    if (data) {
+      setCategories(data)
+    }
+  }
+
+  const handleOpenDialog = async (budget?: Budget) => {
+    // Fetch latest categories to include any newly created ones
+    await fetchLatestCategories()
+
     if (budget) {
       setEditingBudget(budget)
       setSelectedCategoryId(budget.category_id)
@@ -263,12 +275,10 @@ export function BudgetList({ budgets: initialBudgets, categories, spending, mont
                     />
                     {percentageThroughMonth !== null && (
                       <div
-                        className="absolute top-0 bottom-0 w-0.5 bg-blue-500 z-10"
+                        className="absolute -top-1 -bottom-1 w-0.5 bg-blue-500 z-10"
                         style={{ left: `${Math.min(percentageThroughMonth, 100)}%` }}
-                        title={`Expected: ${(Number(budget.amount) * (percentageThroughMonth / 100)).toFixed(2)}`}
-                      >
-                        <div className="absolute -top-1 -left-1 w-2 h-2 bg-blue-500 rounded-full" />
-                      </div>
+                        title={`Expected: $${(Number(budget.amount) * (percentageThroughMonth / 100)).toFixed(2)}`}
+                      />
                     )}
                   </div>
                   <div className="flex justify-between text-sm">

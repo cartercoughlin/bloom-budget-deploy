@@ -96,12 +96,10 @@ export function BudgetOverview({ budgets, spending, month, year }: BudgetOvervie
             <Progress value={Math.min(percentageUsed, 100)} className="h-2" />
             {percentageThroughMonth !== null && (
               <div
-                className="absolute top-0 bottom-0 w-0.5 bg-blue-500 z-10"
+                className="absolute -top-1 -bottom-1 w-0.5 bg-blue-500 z-10"
                 style={{ left: `${Math.min(percentageThroughMonth, 100)}%` }}
                 title={`Expected: $${(totalBudget * (percentageThroughMonth / 100)).toFixed(2)}`}
-              >
-                <div className="absolute -top-1 -left-1 w-2 h-2 bg-blue-500 rounded-full" />
-              </div>
+              />
             )}
           </div>
           <p className="text-xs text-muted-foreground mt-2">{percentageUsed.toFixed(1)}% used</p>

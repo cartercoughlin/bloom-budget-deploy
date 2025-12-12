@@ -22,10 +22,16 @@ interface CategoryRuleFormProps {
   initialData?: {
     id?: string
     name: string
-    description_pattern: string
     category_id: string
     priority: number
     is_active: boolean
+    description_pattern?: string | null
+    amount_min?: number | null
+    amount_max?: number | null
+    transaction_type?: 'debit' | 'credit' | null
+    bank_pattern?: string | null
+    account_pattern?: string | null
+    institution_pattern?: string | null
   }
 }
 
@@ -34,10 +40,16 @@ export function CategoryRuleForm({ categories, initialData }: CategoryRuleFormPr
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
-    description_pattern: initialData?.description_pattern || "",
     category_id: initialData?.category_id || "",
-    priority: initialData?.priority || 1,
+    priority: initialData?.priority || 5,
     is_active: initialData?.is_active ?? true,
+    description_pattern: initialData?.description_pattern || "",
+    amount_min: initialData?.amount_min?.toString() || "",
+    amount_max: initialData?.amount_max?.toString() || "",
+    transaction_type: initialData?.transaction_type || "",
+    bank_pattern: initialData?.bank_pattern || "",
+    account_pattern: initialData?.account_pattern || "",
+    institution_pattern: initialData?.institution_pattern || "",
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,25 +57,44 @@ export function CategoryRuleForm({ categories, initialData }: CategoryRuleFormPr
     setLoading(true)
 
     try {
-      const url = initialData?.id 
+      const url = initialData?.id
         ? `/api/category-rules/${initialData.id}`
         : "/api/category-rules"
-      
+
       const method = initialData?.id ? "PUT" : "POST"
+
+      // Convert form data to API format
+      const payload = {
+        name: formData.name,
+        category_id: formData.category_id,
+        priority: formData.priority,
+        is_active: formData.is_active,
+        description_pattern: formData.description_pattern || null,
+        amount_min: formData.amount_min ? parseFloat(formData.amount_min) : null,
+        amount_max: formData.amount_max ? parseFloat(formData.amount_max) : null,
+        transaction_type: formData.transaction_type || null,
+        bank_pattern: formData.bank_pattern || null,
+        account_pattern: formData.account_pattern || null,
+        institution_pattern: formData.institution_pattern || null,
+      }
 
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
 
       if (response.ok) {
         router.push("/categories/rules")
+        router.refresh()
       } else {
-        console.error("Failed to save rule")
+        const error = await response.json()
+        console.error("Failed to save rule:", error)
+        alert(`Failed to save rule: ${error.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.error("Error saving rule:", error)
+      alert('Error saving rule. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -84,7 +115,8 @@ export function CategoryRuleForm({ categories, initialData }: CategoryRuleFormPr
         <CardHeader>
           <CardTitle>{initialData?.id ? "Edit" : "Create"} Category Rule</CardTitle>
           <CardDescription>
-            Rules automatically assign categories to transactions based on description patterns
+            Rules automatically assign categories to transactions based on one or more conditions.
+            All specified conditions must match for the rule to apply.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -100,18 +132,107 @@ export function CategoryRuleForm({ categories, initialData }: CategoryRuleFormPr
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="pattern">Description Pattern</Label>
-              <Input
-                id="pattern"
-                value={formData.description_pattern}
-                onChange={(e) => setFormData({ ...formData, description_pattern: e.target.value })}
-                placeholder="e.g., walmart|target|grocery"
-                required
-              />
-              <p className="text-sm text-muted-foreground">
-                Use regular expressions. Examples: "starbucks" (exact match), "coffee|cafe" (multiple options)
+            <div className="border-t pt-4 mt-4">
+              <h3 className="font-medium mb-4">Rule Conditions (at least one required)</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Specify one or more conditions. A transaction must match ALL specified conditions for the rule to apply.
               </p>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="pattern">Description Pattern (Regex)</Label>
+                  <Input
+                    id="pattern"
+                    value={formData.description_pattern}
+                    onChange={(e) => setFormData({ ...formData, description_pattern: e.target.value })}
+                    placeholder="e.g., walmart|target|grocery"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Regular expression to match transaction description. Examples: "starbucks", "coffee|cafe"
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="amount_min">Minimum Amount</Label>
+                    <Input
+                      id="amount_min"
+                      type="number"
+                      step="0.01"
+                      value={formData.amount_min}
+                      onChange={(e) => setFormData({ ...formData, amount_min: e.target.value })}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="amount_max">Maximum Amount</Label>
+                    <Input
+                      id="amount_max"
+                      type="number"
+                      step="0.01"
+                      value={formData.amount_max}
+                      onChange={(e) => setFormData({ ...formData, amount_max: e.target.value })}
+                      placeholder="1000.00"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="transaction_type">Transaction Type</Label>
+                  <Select
+                    value={formData.transaction_type}
+                    onValueChange={(value) => setFormData({ ...formData, transaction_type: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Any type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Any type</SelectItem>
+                      <SelectItem value="debit">Debit (Expense)</SelectItem>
+                      <SelectItem value="credit">Credit (Income)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bank_pattern">Bank Pattern (Regex)</Label>
+                  <Input
+                    id="bank_pattern"
+                    value={formData.bank_pattern}
+                    onChange={(e) => setFormData({ ...formData, bank_pattern: e.target.value })}
+                    placeholder="e.g., chase|citi"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Match transactions from specific banks
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="account_pattern">Account Pattern (Regex)</Label>
+                  <Input
+                    id="account_pattern"
+                    value={formData.account_pattern}
+                    onChange={(e) => setFormData({ ...formData, account_pattern: e.target.value })}
+                    placeholder="e.g., checking|savings"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Match transactions from specific accounts
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="institution_pattern">Institution Pattern (Regex)</Label>
+                  <Input
+                    id="institution_pattern"
+                    value={formData.institution_pattern}
+                    onChange={(e) => setFormData({ ...formData, institution_pattern: e.target.value })}
+                    placeholder="e.g., chase|wellsfargo"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Match transactions from specific institutions
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">

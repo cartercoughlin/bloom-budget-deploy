@@ -61,6 +61,38 @@ A Next.js-based budget tracking application that allows users to import, categor
   - `components/budget-overview.tsx`
   - `app/(app)/budgets/page.tsx`
 
+**2025-12-12: Added mobile navigation menu**
+- Added hamburger menu button for mobile devices
+- Implemented slide-out navigation drawer using Sheet component
+- Mobile menu includes all navigation items and logout button
+- Menu automatically closes when navigating to a new page
+- Desktop navigation remains unchanged
+- File modified:
+  - `components/app-nav.tsx`
+
+**2025-12-12: Auto-refresh categories in budget dialog**
+- Budget category dropdown now fetches latest categories when opened
+- Categories created from transactions page immediately appear in budget dialog
+- No need to refresh the page to see new categories
+- File modified:
+  - `components/budget-list.tsx`
+
+**2025-12-12: Implemented category rules system with advanced conditions**
+- Created category_rules database table with full schema
+- Rules now support multiple condition types that can be combined
+- Available conditions: description, amount range, transaction type, bank, account, institution
+- All conditions use regex patterns for flexible matching
+- Added PUT and DELETE API endpoints for editing and deleting rules
+- Completely rebuilt rule form with all condition fields
+- Updated rule matching logic to check all specified conditions
+- Rules are checked in priority order (highest first)
+- Files modified/created:
+  - `scripts/004_create_category_rules.sql` (NEW)
+  - `lib/category-rules.ts`
+  - `app/api/category-rules/route.ts`
+  - `app/api/category-rules/[id]/route.ts` (NEW)
+  - `components/category-rule-form.tsx`
+
 ## Setup
 
 1. Install dependencies:
@@ -70,12 +102,18 @@ A Next.js-based budget tracking application that allows users to import, categor
 
 2. Set up your Supabase project and configure environment variables
 
-3. Run the development server:
+3. **Run database migrations** (execute SQL files in order in your Supabase SQL editor):
+   - `scripts/001_create_tables.sql` - Create base tables
+   - `scripts/002_seed_default_categories.sql` - Add default categories
+   - `scripts/003_add_sync_columns.sql` - Add sync columns
+   - `scripts/004_create_category_rules.sql` - Create category rules table
+
+4. Run the development server:
    ```bash
    npm run dev
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ## Project Structure
 
