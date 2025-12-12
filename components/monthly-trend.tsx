@@ -81,7 +81,7 @@ export function MonthlyTrend({ transactions }: MonthlyTrendProps) {
               color: "#EF4444",
             },
           }}
-          className="h-64 md:h-80"
+          className="h-64 md:h-96 lg:h-80"
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData}>
