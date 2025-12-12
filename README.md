@@ -31,6 +31,32 @@ A Next.js-based budget tracking application that allows users to import, categor
 
 ### New Features
 
+**2025-12-12: Mobile bottom navigation bar**
+- Added fixed bottom navigation bar for mobile devices
+- Navigation stays in place while scrolling
+- Quick access to Dashboard, Transactions, Budgets, and Categories
+- Only visible on mobile devices (hidden on desktop)
+- Files created:
+  - `components/mobile-nav.tsx`
+- Files modified:
+  - `app/(app)/layout.tsx`
+
+**2025-12-12: Fixed inconsistent page widths**
+- Standardized all pages to use `max-w-7xl` for consistent layout width
+- Added bottom padding (`pb-20`) on mobile to prevent content from being hidden by bottom nav
+- Files modified:
+  - `app/(app)/dashboard/page.tsx`
+  - `app/(app)/transactions/page.tsx`
+  - `app/(app)/budgets/page.tsx`
+  - `app/(app)/categories/page.tsx`
+
+**2025-12-12: Additional mobile component optimizations**
+- Optimized Top Expenses component for mobile with smaller text and spacing
+- Optimized Monthly Trend chart for mobile with reduced height and smaller text
+- Files modified:
+  - `components/top-transactions.tsx`
+  - `components/monthly-trend.tsx`
+
 **2025-12-12: Mobile layout optimization**
 - Optimized all components for mobile viewing
 - Dashboard spending overview cards now display in 2-column grid on mobile

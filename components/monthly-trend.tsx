@@ -52,12 +52,12 @@ export function MonthlyTrend({ transactions }: MonthlyTrendProps) {
   if (chartData.length === 0) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Monthly Trend</CardTitle>
-          <CardDescription>Income vs expenses over time</CardDescription>
+        <CardHeader className="pb-3 md:pb-6">
+          <CardTitle className="text-base md:text-lg">Monthly Trend</CardTitle>
+          <CardDescription className="text-xs md:text-sm">Income vs expenses over time</CardDescription>
         </CardHeader>
-        <CardContent className="flex items-center justify-center h-64">
-          <p className="text-muted-foreground">No transaction history available</p>
+        <CardContent className="flex items-center justify-center h-48 md:h-64">
+          <p className="text-muted-foreground text-xs md:text-sm">No transaction history available</p>
         </CardContent>
       </Card>
     )
@@ -65,11 +65,11 @@ export function MonthlyTrend({ transactions }: MonthlyTrendProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Monthly Trend</CardTitle>
-        <CardDescription>Income vs expenses over the last 6 months</CardDescription>
+      <CardHeader className="pb-3 md:pb-6">
+        <CardTitle className="text-base md:text-lg">Monthly Trend</CardTitle>
+        <CardDescription className="text-xs md:text-sm">Income vs expenses over the last 6 months</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pb-4 md:pb-6">
         <ChartContainer
           config={{
             income: {
@@ -81,13 +81,13 @@ export function MonthlyTrend({ transactions }: MonthlyTrendProps) {
               color: "#EF4444",
             },
           }}
-          className="h-80"
+          className="h-64 md:h-80"
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis dataKey="month" className="text-xs" />
-              <YAxis className="text-xs" tickFormatter={(value) => `$${value}`} />
+              <XAxis dataKey="month" className="text-[10px] md:text-xs" />
+              <YAxis className="text-[10px] md:text-xs" tickFormatter={(value) => `$${value}`} />
               <ChartTooltip
                 content={
                   <ChartTooltipContent
@@ -96,7 +96,7 @@ export function MonthlyTrend({ transactions }: MonthlyTrendProps) {
                   />
                 }
               />
-              <Legend />
+              <Legend wrapperStyle={{ fontSize: '12px' }} />
               <Bar dataKey="income" fill="#10B981" radius={[4, 4, 0, 0]} />
               <Bar dataKey="expenses" fill="#EF4444" radius={[4, 4, 0, 0]} />
             </BarChart>

@@ -1,5 +1,6 @@
 import type React from "react"
 import { AppNav } from "@/components/app-nav"
+import { MobileNav } from "@/components/mobile-nav"
 
 export default function AppLayout({
   children,
@@ -10,6 +11,7 @@ export default function AppLayout({
     <>
       <AppNav />
       {children}
+      <MobileNav />
     </>
   )
 }
