@@ -56,6 +56,24 @@ export function BudgetList({ budgets: initialBudgets, categories, spending, mont
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
+  // Calculate percentage through the month
+  const getPercentageThroughMonth = () => {
+    const now = new Date()
+    const currentMonth = now.getMonth() + 1
+    const currentYear = now.getFullYear()
+
+    // Only show expected marker if viewing current month
+    if (month !== currentMonth || year !== currentYear) {
+      return null
+    }
+
+    const currentDay = now.getDate()
+    const daysInMonth = new Date(year, month, 0).getDate()
+    return (currentDay / daysInMonth) * 100
+  }
+
+  const percentageThroughMonth = getPercentageThroughMonth()
+
   const handleOpenDialog = (budget?: Budget) => {
     if (budget) {
       setEditingBudget(budget)
@@ -237,11 +255,22 @@ export function BudgetList({ budgets: initialBudgets, categories, spending, mont
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <Progress
-                    value={Math.min(percentage, 100)}
-                    className={isOverBudget ? "bg-red-100" : undefined}
-                    indicatorClassName={isOverBudget ? "bg-red-600" : undefined}
-                  />
+                  <div className="relative">
+                    <Progress
+                      value={Math.min(percentage, 100)}
+                      className={isOverBudget ? "bg-red-100" : undefined}
+                      indicatorClassName={isOverBudget ? "bg-red-600" : undefined}
+                    />
+                    {percentageThroughMonth !== null && (
+                      <div
+                        className="absolute top-0 bottom-0 w-0.5 bg-blue-500 z-10"
+                        style={{ left: `${Math.min(percentageThroughMonth, 100)}%` }}
+                        title={`Expected: ${(Number(budget.amount) * (percentageThroughMonth / 100)).toFixed(2)}`}
+                      >
+                        <div className="absolute -top-1 -left-1 w-2 h-2 bg-blue-500 rounded-full" />
+                      </div>
+                    )}
+                  </div>
                   <div className="flex justify-between text-sm">
                     <span className={isOverBudget ? "text-red-600 font-medium" : "text-muted-foreground"}>
                       {percentage.toFixed(1)}% used

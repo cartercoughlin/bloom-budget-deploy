@@ -65,7 +65,7 @@ export default async function BudgetsPage() {
         </p>
       </div>
 
-      <BudgetOverview budgets={budgets || []} spending={spendingByCategory} />
+      <BudgetOverview budgets={budgets || []} spending={spendingByCategory} month={currentMonth} year={currentYear} />
 
       <div className="mt-8">
         <BudgetList

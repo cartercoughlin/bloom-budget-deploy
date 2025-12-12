@@ -9,6 +9,9 @@ A Next.js-based budget tracking application that allows users to import, categor
 - Transaction filtering and search
 - Category creation and customization
 - Real-time transaction categorization
+- Budget tracking with expected spending indicators
+  - Visual markers on progress bars showing expected spending based on time through the month
+  - Helps identify if you're spending too fast or staying on track
 
 ## Tech Stack
 
@@ -45,6 +48,18 @@ A Next.js-based budget tracking application that allows users to import, categor
 - Updated API route to properly await `params` Promise (Next.js 14+ breaking change)
 - This was causing transaction IDs to be undefined when updating categories
 - File modified: `app/api/transactions/[id]/category/route.ts`
+
+### New Features
+
+**2025-12-12: Added expected spending indicators to budget progress bars**
+- Added blue marker on progress bars showing expected spending based on percentage through the month
+- Shows expected value on hover tooltip
+- Only displays for current month budgets
+- Helps users see if they're on track with their spending
+- Files modified:
+  - `components/budget-list.tsx`
+  - `components/budget-overview.tsx`
+  - `app/(app)/budgets/page.tsx`
 
 ## Setup
 
