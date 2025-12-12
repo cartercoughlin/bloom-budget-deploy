@@ -298,8 +298,8 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
         </div>
       </CardHeader>
 
-      <CardContent className="p-3 md:p-6">
-        <div className="overflow-x-auto -mx-3 md:mx-0">
+      <CardContent className="p-0 sm:p-6">
+        <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="border-b">
               <tr>
