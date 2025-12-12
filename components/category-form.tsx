@@ -99,13 +99,13 @@ export function CategoryForm({ category }: { category?: Category }) {
 
           <div className="space-y-2">
             <Label>Icon</Label>
-            <div className="grid grid-cols-8 gap-2">
+            <div className="grid grid-cols-5 md:grid-cols-8 gap-2">
               {PRESET_ICONS.map((presetIcon) => (
                 <button
                   key={presetIcon}
                   type="button"
                   onClick={() => setIcon(presetIcon)}
-                  className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl transition-all ${
+                  className={`w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-lg md:text-2xl transition-all ${
                     icon === presetIcon ? "ring-2 ring-primary scale-110" : "hover:scale-105 bg-muted"
                   }`}
                 >
@@ -117,13 +117,13 @@ export function CategoryForm({ category }: { category?: Category }) {
 
           <div className="space-y-2">
             <Label>Color</Label>
-            <div className="grid grid-cols-9 gap-2">
+            <div className="grid grid-cols-6 md:grid-cols-9 gap-2">
               {PRESET_COLORS.map((presetColor) => (
                 <button
                   key={presetColor}
                   type="button"
                   onClick={() => setColor(presetColor)}
-                  className={`w-12 h-12 rounded-lg transition-all ${
+                  className={`w-10 h-10 md:w-12 md:h-12 rounded-lg transition-all ${
                     color === presetColor ? "ring-2 ring-primary scale-110" : "hover:scale-105"
                   }`}
                   style={{ backgroundColor: presetColor }}
@@ -131,53 +131,54 @@ export function CategoryForm({ category }: { category?: Category }) {
               ))}
             </div>
             <div className="flex items-center gap-2 mt-4">
-              <Label htmlFor="custom-color">Custom Color:</Label>
+              <Label htmlFor="custom-color" className="text-xs md:text-sm">Custom Color:</Label>
               <input
                 id="custom-color"
                 type="color"
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
-                className="w-20 h-10 rounded cursor-pointer"
+                className="w-16 h-8 md:w-20 md:h-10 rounded cursor-pointer"
               />
-              <span className="text-sm text-muted-foreground">{color}</span>
+              <span className="text-xs md:text-sm text-muted-foreground">{color}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+          <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-muted rounded-lg">
             <div
-              className="w-16 h-16 rounded-lg flex items-center justify-center text-3xl"
+              className="w-12 h-12 md:w-16 md:h-16 rounded-lg flex items-center justify-center text-2xl md:text-3xl"
               style={{ backgroundColor: `${color}20` }}
             >
               {icon}
             </div>
             <div>
-              <p className="font-semibold">{name || "Category Name"}</p>
-              <p className="text-sm text-muted-foreground">Preview</p>
+              <p className="font-semibold text-sm md:text-base">{name || "Category Name"}</p>
+              <p className="text-xs md:text-sm text-muted-foreground">Preview</p>
             </div>
           </div>
 
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription className="text-xs md:text-sm">{error}</AlertDescription>
             </Alert>
           )}
 
-          <div className="flex gap-4">
+          <div className="flex gap-3 md:gap-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => router.back()}
               disabled={isLoading}
-              className="flex-1"
+              className="flex-1 text-xs md:text-sm h-9 md:h-10"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading} className="flex-1">
+            <Button type="submit" disabled={isLoading} className="flex-1 text-xs md:text-sm h-9 md:h-10">
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  <Loader2 className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4 animate-spin" />
+                  <span className="hidden sm:inline">Saving...</span>
+                  <span className="sm:hidden">Save</span>
                 </>
               ) : (
                 <>{category ? "Update" : "Create"} Category</>
