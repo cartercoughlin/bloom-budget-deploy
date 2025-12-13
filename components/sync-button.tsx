@@ -12,7 +12,7 @@ export function SyncButton() {
   const handleSync = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/sync-transactions', {
+      const response = await fetch('/api/sync-sheets', {
         method: 'POST',
       })
       
