@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { BudgetList } from "@/components/budget-list"
-import { AccountBalances } from "@/components/account-balances"
-import { BudgetAllocator } from "@/components/budget-allocator"
+import { AccountBalancesWrapper } from "@/components/account-balances-wrapper"
+import { BudgetAllocatorWrapper } from "@/components/budget-allocator-wrapper"
 
 export default async function BudgetsPage() {
   const supabase = await createClient()
@@ -85,14 +85,11 @@ export default async function BudgetsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Left Column - Account Management & Allocation */}
         <div className="space-y-6">
-          <AccountBalances 
-            accounts={accounts || []}
-            onAddAccount={async () => {}} 
-            onUpdateBalance={async () => {}}
-            onDeleteAccount={async () => {}}
+          <AccountBalancesWrapper 
+            initialAccounts={accounts || []}
           />
           
-          <BudgetAllocator
+          <BudgetAllocatorWrapper
             budgets={budgets?.map(b => ({
               id: b.id,
               name: b.categories?.name || 'Unknown Category',
@@ -101,7 +98,6 @@ export default async function BudgetsPage() {
               available_amount: b.available_amount || 0
             })) || []}
             availableToAllocate={availableToAllocate}
-            onAllocate={async () => {}}
           />
         </div>
 
