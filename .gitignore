@@ -1,7 +1,9 @@
 node_modules/
 .next/
+.env
 .env.local
 .env.production
 .vercel/
 *.log
 .DS_Store
+vercel-env-list.txt
