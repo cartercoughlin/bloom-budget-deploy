@@ -53,30 +53,9 @@ export function AppNav() {
             <Wallet className="h-6 w-6" />
             <span className="text-xl font-bold">Bloom Budget</span>
           </Link>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => {
-              const Icon = item.icon
-              return (
-                <Link key={item.href} href={item.href}>
-                  <Button variant="ghost" className={cn("gap-2", pathname?.startsWith(item.href) && "bg-muted")}>
-                    <Icon className="h-4 w-4" />
-                    {item.title}
-                  </Button>
-                </Link>
-              )
-            })}
-          </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Desktop Logout Button */}
-          <Button variant="ghost" onClick={handleLogout} className="hidden md:flex">
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
-
           {/* Mobile Menu */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>

@@ -8,11 +8,13 @@ export async function getGoogleSheetsClient() {
   
   console.log('Client email:', clientEmail);
   console.log('Private key exists:', !!privateKey);
+  console.log('Private key first 50 chars:', privateKey?.substring(0, 50));
   
   // Try base64 decoding first, fallback to direct use
   try {
     privateKey = Buffer.from(privateKey!, 'base64').toString('utf-8');
     console.log('Using base64 decoded key');
+    console.log('Decoded key starts with:', privateKey.substring(0, 30));
   } catch {
     // If not base64, use as-is and handle newlines
     privateKey = privateKey?.replace(/\\n/g, '\n');
@@ -27,6 +29,7 @@ export async function getGoogleSheetsClient() {
   };
   
   console.log('Creating auth with credentials for:', credentials.client_email);
+  console.log('Private key format check:', privateKey?.includes('BEGIN PRIVATE KEY'));
   
   const auth = new google.auth.GoogleAuth({
     credentials,
