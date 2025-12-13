@@ -58,29 +58,31 @@ export default async function BudgetsPage() {
   })
 
   // Get account balances from account_balances table (synced from Tiller Balances sheet)
+  // For budgeting, only include checking accounts and credit cards
   const { data: accounts } = await supabase
     .from("account_balances")
     .select("account_name, account_type, balance")
     .eq("user_id", user.id)
+    .in("account_type", ["checking", "liability"])
 
   // Group balances by account
   const accountBalances: Record<string, number> = {}
-  let totalAssets = 0
+  let totalChecking = 0
   let totalLiabilities = 0
 
   accounts?.forEach((account) => {
     accountBalances[account.account_name] = Number(account.balance)
 
-    // Sum assets (checking, savings) and liabilities (credit cards) separately
+    // Sum checking accounts and liabilities (credit cards) separately
     if (account.account_type === 'liability') {
-      totalLiabilities += Math.abs(Number(account.balance)) // Liabilities are stored as negative, so abs for display
+      totalLiabilities += Math.abs(Number(account.balance)) // Liabilities are stored as negative
     } else {
-      totalAssets += Number(account.balance)
+      totalChecking += Number(account.balance)
     }
   })
 
-  // Total available = assets - liabilities
-  const totalAvailable = totalAssets - totalLiabilities
+  // Total available for budgeting = checking - liabilities
+  const totalAvailable = totalChecking - totalLiabilities
 
   // Calculate total already allocated this month
   const totalAllocated = budgets?.reduce((sum, budget) => sum + Number(budget.allocated_amount || 0), 0) || 0
