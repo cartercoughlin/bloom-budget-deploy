@@ -12,6 +12,8 @@ export interface SyncResult {
 }
 
 export async function syncGoogleSheets(): Promise<SyncResult> {
+  const debugInfo: any = {}
+
   try {
     // Set up Google Sheets API authentication
     const auth = new google.auth.GoogleAuth({
@@ -182,7 +184,6 @@ export async function syncGoogleSheets(): Promise<SyncResult> {
       })
 
       const balancesRows = balancesResponse.data.values
-      const debugInfo: any = {}
 
       if (balancesRows && balancesRows.length > 2) {
         // Debug: Capture the structure
