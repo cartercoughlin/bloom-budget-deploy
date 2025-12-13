@@ -180,12 +180,12 @@ export async function syncGoogleSheets(): Promise<SyncResult> {
     try {
       const balancesResponse = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: "Balances!A:Q", // Covers Sorted Assets and Sorted Liabilities columns
+        range: "Balances!A:V", // Extended to capture liability Balance column
       })
 
       const balancesRows = balancesResponse.data.values
 
-      if (balancesRows && balancesRows.length > 2) {
+      if (balancesRows && balancesRows.length > 1) {
         // Debug: Capture the structure
         debugInfo.row0 = balancesRows[0]
         debugInfo.row1 = balancesRows[1]
@@ -195,20 +195,21 @@ export async function syncGoogleSheets(): Promise<SyncResult> {
         console.log('[v0] Balances row 0:', balancesRows[0])
         console.log('[v0] Balances row 1:', balancesRows[1])
         console.log('[v0] Balances row 2:', balancesRows[2])
-        console.log('[v0] Balances row 3 (first data):', balancesRows[3])
+        console.log('[v0] Balances row 3:', balancesRows[3])
 
-        // Row 0 is the main header, Row 1 is "Sorted Assets" and "Sorted Liabilities"
-        // Row 2 has the column names (Row, Id, Group, Account, Last Updated, Balance)
-        // Assets: Columns F-K (indices 5-10)
-        // Liabilities: Columns L-Q (indices 11-16)
+        // Row 0: "Sorted Assets" at index 9, "Sorted Liabilities" at index 16
+        // Row 1: Column headers (Row, Id, Group, Account, Last Updated, Balance)
+        // Row 2+: Data rows
+        // Assets: Account at index 12, Balance at index 14
+        // Liabilities: Account at index 19, Balance at index 21
 
-        // Process Assets (starting from row 3)
-        for (let i = 3; i < balancesRows.length; i++) {
+        // Process Assets (starting from row 2)
+        for (let i = 2; i < balancesRows.length; i++) {
           const row = balancesRows[i]
-          if (!row || row.length < 11) continue // Need at least up to column K
+          if (!row || row.length < 15) continue // Need at least up to Balance column
 
-          const accountName = row[8]?.trim() // Column I (Account)
-          const balanceStr = row[10]?.trim() // Column K (Balance)
+          const accountName = row[12]?.trim() // Account name
+          const balanceStr = row[14]?.trim() // Balance
 
           console.log(`[v0] Asset row ${i}: accountName="${accountName}", balance="${balanceStr}"`)
 
@@ -244,13 +245,15 @@ export async function syncGoogleSheets(): Promise<SyncResult> {
           }
         }
 
-        // Process Liabilities (starting from row 3)
-        for (let i = 3; i < balancesRows.length; i++) {
+        // Process Liabilities (starting from row 2)
+        for (let i = 2; i < balancesRows.length; i++) {
           const row = balancesRows[i]
-          if (!row || row.length < 17) continue // Need at least up to column Q
+          if (!row || row.length < 22) continue // Need at least up to Balance column
 
-          const accountName = row[14]?.trim() // Column O (Account)
-          const balanceStr = row[16]?.trim() // Column Q (Balance)
+          const accountName = row[19]?.trim() // Account name
+          const balanceStr = row[21]?.trim() // Balance
+
+          console.log(`[v0] Liability row ${i}: accountName="${accountName}", balance="${balanceStr}"`)
 
           if (!accountName || !balanceStr) continue
 
