@@ -21,8 +21,20 @@ export function BudgetAllocatorWrapper({ budgets, availableToAllocate }: BudgetA
 
   const handleAllocate = async (budgetId: string, amount: number) => {
     try {
-      // TODO: Create API endpoint for budget allocation
-      console.log('Allocating', amount, 'to budget', budgetId)
+      const response = await fetch(`/api/budgets/${budgetId}/allocate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ amount }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        console.error('Failed to allocate:', error)
+        return
+      }
+
       router.refresh()
     } catch (error) {
       console.error('Failed to allocate:', error)
