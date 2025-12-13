@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { BudgetList } from "@/components/budget-list"
-import { AccountBalancesWrapper } from "@/components/account-balances-wrapper"
+import { AccountSummary } from "@/components/account-summary"
 import { BudgetAllocatorWrapper } from "@/components/budget-allocator-wrapper"
 
 export default async function BudgetsPage() {
@@ -57,23 +57,31 @@ export default async function BudgetsPage() {
     }
   })
 
-  // Fetch account balances
-  const { data: accounts } = await supabase
-    .from("account_balances")
-    .select("*")
+  // Calculate account balances from transactions instead of manual entry
+  const { data: allTransactions } = await supabase
+    .from("transactions")
+    .select("amount, transaction_type, bank, account, institution")
     .eq("user_id", user.id)
-    .order("created_at", { ascending: true })
+    .eq("hidden", false)
 
-  // Calculate available to allocate
-  const totalAssets = (accounts || [])
-    .filter(acc => acc.account_type !== 'liability')
-    .reduce((sum, acc) => sum + acc.balance, 0)
+  // Group transactions by account and calculate balances
+  const accountBalances: Record<string, number> = {}
+  allTransactions?.forEach((tx) => {
+    const accountKey = `${tx.bank || tx.institution || 'Unknown'} - ${tx.account || 'Main'}`
+    if (!accountBalances[accountKey]) {
+      accountBalances[accountKey] = 0
+    }
+    
+    // Credit transactions add to balance, debit transactions subtract
+    if (tx.transaction_type === 'credit') {
+      accountBalances[accountKey] += Number(tx.amount)
+    } else {
+      accountBalances[accountKey] -= Number(tx.amount)
+    }
+  })
 
-  const totalLiabilities = (accounts || [])
-    .filter(acc => acc.account_type === 'liability')
-    .reduce((sum, acc) => sum + Math.abs(acc.balance), 0)
-
-  const availableToAllocate = totalAssets - totalLiabilities
+  // Calculate total available (assuming all accounts are checking/assets, no liabilities for now)
+  const totalAvailable = Object.values(accountBalances).reduce((sum, balance) => sum + balance, 0)
 
   return (
     <div className="container mx-auto p-3 md:p-6 max-w-7xl pb-20 md:pb-6">
@@ -83,10 +91,11 @@ export default async function BudgetsPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left Column - Account Management & Allocation */}
+        {/* Left Column - Account Summary & Allocation */}
         <div className="space-y-6">
-          <AccountBalancesWrapper 
-            initialAccounts={accounts || []}
+          <AccountSummary 
+            accountBalances={accountBalances}
+            totalAvailable={totalAvailable}
           />
           
           <BudgetAllocatorWrapper
@@ -97,7 +106,7 @@ export default async function BudgetsPage() {
               spent_amount: spendingByCategory[b.category_id] || 0,
               available_amount: b.available_amount || 0
             })) || []}
-            availableToAllocate={availableToAllocate}
+            availableToAllocate={totalAvailable}
           />
         </div>
 
