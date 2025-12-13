@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { BudgetOverview } from "@/components/budget-overview"
 import { BudgetList } from "@/components/budget-list"
+import { AccountBalances } from "@/components/account-balances"
+import { BudgetAllocator } from "@/components/budget-allocator"
 
 export default async function BudgetsPage() {
   const supabase = await createClient()
@@ -56,25 +57,64 @@ export default async function BudgetsPage() {
     }
   })
 
+  // Fetch account balances
+  const { data: accounts } = await supabase
+    .from("account_balances")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true })
+
+  // Calculate available to allocate
+  const totalAssets = (accounts || [])
+    .filter(acc => acc.account_type !== 'liability')
+    .reduce((sum, acc) => sum + acc.balance, 0)
+
+  const totalLiabilities = (accounts || [])
+    .filter(acc => acc.account_type === 'liability')
+    .reduce((sum, acc) => sum + Math.abs(acc.balance), 0)
+
+  const availableToAllocate = totalAssets - totalLiabilities
+
   return (
     <div className="container mx-auto p-3 md:p-6 max-w-7xl pb-20 md:pb-6">
       <div className="mb-4 md:mb-8">
         <h1 className="text-xl md:text-3xl font-bold mb-1 md:mb-2">Budget</h1>
-        <p className="text-muted-foreground text-xs md:text-sm">
-          Manage your monthly budget for {currentDate.toLocaleString("default", { month: "long", year: "numeric" })}
-        </p>
+        <p className="text-muted-foreground text-xs md:text-sm">Allocate your money and track spending</p>
       </div>
 
-      <BudgetOverview budgets={budgets || []} spending={spendingByCategory} month={currentMonth} year={currentYear} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Left Column - Account Management & Allocation */}
+        <div className="space-y-6">
+          <AccountBalances 
+            accounts={accounts || []}
+            onAddAccount={async () => {}} 
+            onUpdateBalance={async () => {}}
+            onDeleteAccount={async () => {}}
+          />
+          
+          <BudgetAllocator
+            budgets={budgets?.map(b => ({
+              id: b.id,
+              name: b.categories?.name || 'Unknown Category',
+              allocated_amount: b.allocated_amount || 0,
+              spent_amount: spendingByCategory[b.category_id] || 0,
+              available_amount: b.available_amount || 0
+            })) || []}
+            availableToAllocate={availableToAllocate}
+            onAllocate={async () => {}}
+          />
+        </div>
 
-      <div className="mt-6 md:mt-8">
-        <BudgetList
-          budgets={budgets || []}
-          categories={categories || []}
-          spending={spendingByCategory}
-          month={currentMonth}
-          year={currentYear}
-        />
+        {/* Right Column - Budget List */}
+        <div>
+          <BudgetList
+            budgets={budgets || []}
+            categories={categories || []}
+            spending={spendingByCategory}
+            month={currentMonth}
+            year={currentYear}
+          />
+        </div>
       </div>
     </div>
   )
