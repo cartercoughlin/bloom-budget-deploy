@@ -4,21 +4,27 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 export async function getGoogleSheetsClient() {
   let privateKey = process.env.GOOGLE_SHEETS_PRIVATE_KEY;
+  const clientEmail = process.env.GOOGLE_SHEETS_CLIENT_EMAIL;
+  
+  console.log('Client email:', clientEmail);
+  console.log('Private key exists:', !!privateKey);
   
   // Try base64 decoding first, fallback to direct use
   try {
     privateKey = Buffer.from(privateKey!, 'base64').toString('utf-8');
+    console.log('Using base64 decoded key');
   } catch {
     // If not base64, use as-is and handle newlines
     privateKey = privateKey?.replace(/\\n/g, '\n');
+    console.log('Using direct key with newline replacement');
   }
   
   const credentials = {
     type: "service_account",
     project_id: "bloom-budget",
-    private_key_id: "09d2ea03c17b02feca109194d2163fe5e99e7146",
+    private_key_id: "67ea8f07b91bf1e137aac9e781208ba5744768ef",
     private_key: privateKey,
-    client_email: process.env.GOOGLE_SHEETS_CLIENT_EMAIL,
+    client_email: clientEmail,
     client_id: "111678461772918770769",
     auth_uri: "https://accounts.google.com/o/oauth2/auth",
     token_uri: "https://oauth2.googleapis.com/token",
@@ -26,6 +32,8 @@ export async function getGoogleSheetsClient() {
     client_x509_cert_url: "https://www.googleapis.com/robot/v1/metadata/x509/carter%40bloom-budget.iam.gserviceaccount.com",
     universe_domain: "googleapis.com"
   };
+  
+  console.log('Creating auth with credentials for:', credentials.client_email);
   
   const auth = new google.auth.GoogleAuth({
     credentials,
