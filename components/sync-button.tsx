@@ -1,9 +1,10 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { RefreshCw } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { RefreshCw } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 export function SyncButton() {
   const [isLoading, setIsLoading] = useState(false)
@@ -12,7 +13,7 @@ export function SyncButton() {
   const handleSync = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/sync-sheets', {
+      const response = await fetch('/api/sync-transactions', {
         method: 'POST',
       })
 
@@ -20,22 +21,20 @@ export function SyncButton() {
         const data = await response.json()
         console.log('Sync result:', data)
 
-        // Log debug info if available
-        if (data.debugInfo) {
-          console.log('DEBUG INFO:')
-          console.log('Row 0:', data.debugInfo.row0)
-          console.log('Row 1:', data.debugInfo.row1)
-          console.log('Row 2:', data.debugInfo.row2)
-          console.log('Row 3:', data.debugInfo.row3)
+        if (data.success) {
+          toast.success(`Synced ${data.newTransactions} new transactions`)
+          router.refresh()
+        } else {
+          toast.error(data.error || 'Sync failed')
         }
-
-        router.refresh()
       } else {
         const error = await response.json()
         console.error('Sync failed:', error)
+        toast.error(error.error || 'Failed to sync transactions')
       }
     } catch (error) {
       console.error('Sync error:', error)
+      toast.error('Failed to sync transactions')
     } finally {
       setIsLoading(false)
     }

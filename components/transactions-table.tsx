@@ -57,6 +57,7 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
   const [amountMin, setAmountMin] = useState("")
   const [amountMax, setAmountMax] = useState("")
   const [showHidden, setShowHidden] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
@@ -183,17 +184,29 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
               {filteredTransactions.length} of {transactions.length} transactions
             </CardDescription>
           </div>
-          {hasActiveFilters && (
-            <Button variant="outline" size="sm" onClick={clearFilters} className="text-xs md:text-sm h-7 md:h-9 px-2 md:px-3">
-              <X className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
-              <span className="hidden sm:inline">Clear Filters</span>
-              <span className="sm:hidden">Clear</span>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowFilters(!showFilters)}
+              className="text-xs md:text-sm h-7 md:h-9 px-2 md:px-3"
+            >
+              <Filter className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Filters</span>
             </Button>
-          )}
+            {hasActiveFilters && (
+              <Button variant="outline" size="sm" onClick={clearFilters} className="text-xs md:text-sm h-7 md:h-9 px-2 md:px-3">
+                <X className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Clear</span>
+              </Button>
+            )}
+          </div>
         </div>
 
-        {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 mt-3 md:mt-4">
+        {/* Collapsible Filters */}
+        {showFilters && (
+          <div className="space-y-3 mt-4 p-4 bg-muted/30 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
           <Input
             placeholder="Search transactions..."
             value={searchTerm}
@@ -248,10 +261,10 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
               onChange={(e) => setAmountMax(e.target.value)}
               className="text-xs md:text-sm h-8 md:h-10"
             />
+            </div>
           </div>
-        </div>
 
-        <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
+          <div className="flex flex-wrap gap-2">
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="text-xs md:text-sm h-7 md:h-9 px-2 md:px-3">
@@ -295,7 +308,9 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
             {showHidden ? <Eye className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" /> : <EyeOff className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />}
             {showHidden ? "Hiding hidden" : "Show hidden"}
           </Button>
-        </div>
+          </div>
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="p-0 sm:p-6">

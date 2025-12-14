@@ -14,7 +14,8 @@
     "mobile:setup": "npx cap sync && echo 'Mobile platforms synced! Update capacitor.config.ts server.url to point to your deployed app.'",
     "mobile:dev:ios": "npx cap open ios",
     "mobile:dev:android": "npx cap open android",
-    "mobile:dev:local": "npm run dev:mobile & npx cap sync && npx cap open ios"
+    "mobile:dev:local": "npm run dev:mobile & npx cap sync && npx cap open ios",
+    "deploy-mobile": "vercel --prod && npm run cap:sync"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
@@ -63,15 +64,16 @@
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.1",
-    "googleapis": "168.0.0",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
     "next": "16.0.10",
     "next-themes": "^0.4.6",
+    "plaid": "^13.1.0",
     "react": "19.2.0",
     "react-day-picker": "9.8.0",
     "react-dom": "19.2.0",
     "react-hook-form": "^7.60.0",
+    "react-plaid-link": "^3.6.1",
     "react-resizable-panels": "^2.1.7",
     "recharts": "2.15.4",
     "sonner": "^1.7.4",

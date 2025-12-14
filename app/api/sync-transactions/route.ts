@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { readSheet } from '@/lib/google-sheets'
+import { syncPlaidTransactions } from '@/lib/plaid-sync'
 
 export async function POST() {
   try {
@@ -11,51 +11,40 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID
-    if (!spreadsheetId) {
-      return NextResponse.json({ error: 'Spreadsheet ID not configured' }, { status: 500 })
+    // Get user's Plaid access tokens
+    const { data: plaidItems, error: plaidError } = await supabase
+      .from('plaid_items')
+      .select('access_token')
+      .eq('user_id', user.id)
+
+    if (plaidError || !plaidItems || plaidItems.length === 0) {
+      return NextResponse.json({ error: 'No connected accounts found' }, { status: 400 })
     }
 
-    // Read data from Google Sheets
-    const rows = await readSheet(spreadsheetId, 'Sheet1!A:H')
-    
-    if (!rows || rows.length <= 1) {
-      return NextResponse.json({ message: 'No data to sync' })
-    }
+    let totalNewTransactions = 0
+    let totalUpdatedTransactions = 0
+    let totalProcessed = 0
+    let totalSyncedAccounts = 0
 
-    // Skip header row
-    const dataRows = rows.slice(1)
-    
-    // Process and insert transactions
-    const transactions = dataRows.map(row => ({
-      user_id: user.id,
-      date: row[0] || '',
-      description: row[1] || '',
-      amount: parseFloat(row[2]) || 0,
-      bank: row[3] || '',
-      account: row[4] || '',
-      transaction_type: row[5] || '',
-      institution: row[6] || '',
-      category_id: null,
-      hidden: false
-    })).filter(t => t.date && t.description && t.amount !== 0)
-
-    // Insert transactions (ignore duplicates)
-    const { error } = await supabase
-      .from('transactions')
-      .upsert(transactions, { 
-        onConflict: 'user_id,date,description,amount',
-        ignoreDuplicates: true 
-      })
-
-    if (error) {
-      console.error('Database error:', error)
-      return NextResponse.json({ error: 'Failed to sync transactions' }, { status: 500 })
+    // Sync transactions for each connected account
+    for (const item of plaidItems) {
+      const result = await syncPlaidTransactions(item.access_token)
+      
+      if (result.success) {
+        totalNewTransactions += result.newTransactions
+        totalUpdatedTransactions += result.updatedTransactions
+        totalProcessed += result.totalProcessed
+        totalSyncedAccounts += result.syncedAccounts || 0
+      }
     }
 
     return NextResponse.json({ 
-      message: 'Transactions synced successfully',
-      count: transactions.length 
+      success: true,
+      newTransactions: totalNewTransactions,
+      updatedTransactions: totalUpdatedTransactions,
+      totalProcessed: totalProcessed,
+      syncedAccounts: totalSyncedAccounts,
+      message: 'Transactions synced successfully'
     })
 
   } catch (error) {

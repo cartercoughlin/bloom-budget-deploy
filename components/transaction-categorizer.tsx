@@ -157,22 +157,14 @@ export function TransactionCategorizer({
   return (
     <div className="space-y-2">
       {currentCategory ? (
-        <div className="flex items-center gap-2">
-          <span
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs"
-            style={{ backgroundColor: `${currentCategory.color}20`, color: currentCategory.color }}
-          >
-            {currentCategory.icon} {currentCategory.name}
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleCategorySelect("")}
-            className="h-6 px-2 text-xs"
-          >
-            Change
-          </Button>
-        </div>
+        <button
+          onClick={() => handleCategorySelect("")}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs hover:opacity-80 transition-opacity cursor-pointer"
+          style={{ backgroundColor: `${currentCategory.color}20`, color: currentCategory.color }}
+          title="Click to change category"
+        >
+          {currentCategory.icon} {currentCategory.name}
+        </button>
       ) : (
         <div className="space-y-2">
           {suggestions.length > 0 && (

@@ -24,7 +24,10 @@ interface BudgetOverviewProps {
 
 export function BudgetOverview({ budgets, spending, month, year }: BudgetOverviewProps) {
   const totalBudget = budgets.reduce((sum, b) => sum + Number(b.amount), 0)
-  const totalSpent = Object.values(spending).reduce((sum, amount) => sum + amount, 0)
+  const totalSpent = budgets.reduce((sum, budget) => {
+    const categorySpent = spending[budget.categories?.id || ''] || 0
+    return sum + categorySpent
+  }, 0)
   const remaining = totalBudget - totalSpent
   const percentageUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0
 

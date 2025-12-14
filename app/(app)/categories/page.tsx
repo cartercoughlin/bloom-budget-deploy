@@ -1,21 +1,39 @@
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import { CategoryList } from "@/components/category-list"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Plus, Settings } from "lucide-react"
 
-export default async function CategoriesPage() {
-  const supabase = await createClient()
+export default function CategoriesPage() {
+  const router = useRouter()
+  const [categories, setCategories] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    redirect("/auth/login")
+  useEffect(() => {
+    async function loadData() {
+      const supabase = createClient()
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) {
+        router.push("/auth/login")
+        return
+      }
+
+      const { data } = await supabase.from("categories").select("*").order("name")
+      setCategories(data || [])
+      setLoading(false)
+    }
+
+    loadData()
+  }, [router])
+
+  if (loading) {
+    return <div>Loading...</div>
   }
-
-  const { data: categories } = await supabase.from("categories").select("*").order("name")
 
   return (
     <div className="container mx-auto p-3 md:p-6 max-w-7xl pb-20 md:pb-6">
