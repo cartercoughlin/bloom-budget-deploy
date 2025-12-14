@@ -5,6 +5,14 @@ import { LinkTokenCreateRequest, Products, CountryCode } from 'plaid'
 
 export async function POST() {
   try {
+    // Check environment variables
+    if (!process.env.PLAID_CLIENT_ID || !process.env.PLAID_SECRET) {
+      console.error('Missing Plaid environment variables')
+      return NextResponse.json({ 
+        error: 'Plaid not configured. Please set PLAID_CLIENT_ID and PLAID_SECRET environment variables.' 
+      }, { status: 500 })
+    }
+
     const supabase = await createClient()
     
     const { data: { user } } = await supabase.auth.getUser()
@@ -22,14 +30,26 @@ export async function POST() {
       language: 'en',
     }
 
+    console.log('Creating Plaid link token for user:', user.id)
     const response = await plaidClient.linkTokenCreate(request)
     
     return NextResponse.json({ 
       link_token: response.data.link_token 
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Link token creation error:', error)
-    return NextResponse.json({ error: 'Failed to create link token' }, { status: 500 })
+    
+    // Log more details about the error
+    if (error.response?.data) {
+      console.error('Plaid API error details:', error.response.data)
+      return NextResponse.json({ 
+        error: `Plaid API error: ${error.response.data.error_message || 'Unknown error'}` 
+      }, { status: 400 })
+    }
+    
+    return NextResponse.json({ 
+      error: error.message || 'Failed to create link token' 
+    }, { status: 500 })
   }
 }

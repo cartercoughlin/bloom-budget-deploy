@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { usePlaidLink } from 'react-plaid-link'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
@@ -9,46 +8,34 @@ interface PlaidLinkProps {
   onSuccess?: () => void
 }
 
-export function PlaidLink({ onSuccess }: PlaidLinkProps) {
-  const [linkToken, setLinkToken] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  const onPlaidSuccess = useCallback(async (public_token: string) => {
-    try {
-      setLoading(true)
-      
-      const response = await fetch('/api/plaid/exchange-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ public_token }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to connect account')
+declare global {
+  interface Window {
+    Plaid: {
+      create: (config: any) => {
+        open: () => void
+        exit: () => void
       }
-
-      toast.success('Account connected successfully!')
-      onSuccess?.()
-    } catch (error) {
-      console.error('Error connecting account:', error)
-      toast.error('Failed to connect account')
-    } finally {
-      setLoading(false)
     }
-  }, [onSuccess])
+  }
+}
 
-  const { open, ready } = usePlaidLink({
-    token: linkToken,
-    onSuccess: onPlaidSuccess,
-    onExit: (err) => {
-      if (err) {
-        console.error('Plaid Link error:', err)
-        toast.error('Failed to connect account')
+export function PlaidLink({ onSuccess }: PlaidLinkProps) {
+  const [loading, setLoading] = useState(false)
+  const [plaidLoaded, setPlaidLoaded] = useState(false)
+
+  useEffect(() => {
+    // Load Plaid Link script
+    const script = document.createElement('script')
+    script.src = 'https://cdn.plaid.com/link/v2/stable/link-initialize.js'
+    script.onload = () => setPlaidLoaded(true)
+    document.head.appendChild(script)
+
+    return () => {
+      if (document.head.contains(script)) {
+        document.head.removeChild(script)
       }
-    },
-  })
+    }
+  }, [])
 
   const createLinkToken = async () => {
     try {
@@ -63,26 +50,66 @@ export function PlaidLink({ onSuccess }: PlaidLinkProps) {
       }
 
       const data = await response.json()
-      setLinkToken(data.link_token)
       
       // Open Plaid Link once token is ready
-      setTimeout(() => {
-        if (ready) {
-          open()
-        }
-      }, 100)
+      if (plaidLoaded && window.Plaid) {
+        openPlaidLink(data.link_token)
+      }
     } catch (error) {
       console.error('Error creating link token:', error)
       toast.error('Failed to initialize account connection')
-    } finally {
       setLoading(false)
     }
+  }
+
+  const openPlaidLink = (token: string) => {
+    if (!window.Plaid) {
+      toast.error('Plaid not loaded')
+      setLoading(false)
+      return
+    }
+
+    const handler = window.Plaid.create({
+      token,
+      onSuccess: async (public_token: string) => {
+        try {
+          const response = await fetch('/api/plaid/exchange-token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ public_token }),
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to connect account')
+          }
+
+          toast.success('Account connected successfully!')
+          onSuccess?.()
+        } catch (error) {
+          console.error('Error connecting account:', error)
+          toast.error('Failed to connect account')
+        } finally {
+          setLoading(false)
+        }
+      },
+      onExit: (err: any) => {
+        if (err) {
+          console.error('Plaid Link error:', err)
+          toast.error('Failed to connect account')
+        }
+        setLoading(false)
+      },
+    })
+
+    handler.open()
   }
 
   return (
     <Button 
       onClick={createLinkToken}
-      disabled={loading}
+      disabled={loading || !plaidLoaded}
       className="w-full"
     >
       {loading ? 'Connecting...' : 'Connect Bank Account'}

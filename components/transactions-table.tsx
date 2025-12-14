@@ -22,6 +22,10 @@ interface Transaction {
   bank: string
   category_id?: string
   hidden?: boolean
+  merchant_name?: string | null
+  logo_url?: string | null
+  website?: string | null
+  category_detailed?: string | null
   categories?: {
     name: string
     color: string
@@ -340,10 +344,31 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
                   <td className="p-2 md:p-3 text-[10px] md:text-sm whitespace-nowrap">
                     {new Date(tx.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </td>
-                  <td className="p-2 md:p-3 text-[10px] md:text-sm max-w-[120px] md:max-w-xs truncate" title={tx.description}>
-                    {tx.description}
+                  <td className="p-2 md:p-3 text-[10px] md:text-sm max-w-[120px] md:max-w-xs" title={tx.description}>
+                    <div className="flex items-center gap-2">
+                      {tx.logo_url && (
+                        <img 
+                          src={tx.logo_url} 
+                          alt={tx.merchant_name || tx.description}
+                          className="w-6 h-6 md:w-8 md:h-8 rounded-full object-cover flex-shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      )}
+                      <div className="truncate">
+                        <div className="truncate">
+                          {tx.merchant_name || tx.description}
+                        </div>
+                        {tx.category_detailed && (
+                          <div className="text-[8px] md:text-xs text-muted-foreground truncate">
+                            {tx.category_detailed}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </td>
-                  <td className="p-2 md:p-3 text-[10px] md:text-sm min-w-32 md:min-w-48">
+                  <td className="p-2 md:p-3 text-[10px] md:text-sm min-w-20 md:min-w-48">
                     {txId ? (
                       <TransactionCategorizer
                         transactionId={txId}

@@ -48,6 +48,10 @@ export default function TransactionsPage() {
               category_id,
               user_id,
               hidden,
+              merchant_name,
+              logo_url,
+              website,
+              category_detailed,
               categories (
                 name,
                 color,

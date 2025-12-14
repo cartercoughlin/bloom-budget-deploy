@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { LayoutDashboard, Receipt, Wallet, FolderKanban, TrendingUp, LogOut } from "lucide-react"
+import { LayoutDashboard, Receipt, Wallet, FolderKanban, TrendingUp, CreditCard, LogOut } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -49,6 +49,11 @@ export function AppNav() {
       href: "/categories",
       icon: FolderKanban,
     },
+    {
+      title: "Accounts",
+      href: "/accounts", 
+      icon: CreditCard,
+    },
   ]
 
   return (
@@ -56,8 +61,7 @@ export function AppNav() {
       <div className="container mx-auto flex h-16 items-center justify-between px-6">
         <div className="flex items-center gap-8">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <Image src="/icon-32x32.png" alt="Bloom Budget" width={24} height={24} />
-            <span className="text-xl font-bold">Bloom Budget</span>
+            <span className="text-xl font-bold">🌿 Bloom Budget</span>
           </Link>
 
           {/* Desktop Navigation */}

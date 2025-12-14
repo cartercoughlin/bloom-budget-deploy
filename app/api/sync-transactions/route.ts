@@ -11,44 +11,63 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user's Plaid access tokens
+    // Get user's Plaid access tokens with sync preferences
     const { data: plaidItems, error: plaidError } = await supabase
       .from('plaid_items')
-      .select('access_token')
+      .select('access_token, sync_transactions, sync_balances')
       .eq('user_id', user.id)
 
-    if (plaidError || !plaidItems || plaidItems.length === 0) {
-      return NextResponse.json({ error: 'No connected accounts found' }, { status: 400 })
+    if (plaidError) {
+      console.error('Database error:', plaidError)
+      return NextResponse.json({ error: 'Database error' }, { status: 500 })
+    }
+
+    if (!plaidItems || plaidItems.length === 0) {
+      return NextResponse.json({ error: 'No connected accounts found. Please connect a bank account first.' }, { status: 400 })
     }
 
     let totalNewTransactions = 0
     let totalUpdatedTransactions = 0
     let totalProcessed = 0
     let totalSyncedAccounts = 0
+    const errors: string[] = []
 
     // Sync transactions for each connected account
     for (const item of plaidItems) {
-      const result = await syncPlaidTransactions(item.access_token)
-      
-      if (result.success) {
-        totalNewTransactions += result.newTransactions
-        totalUpdatedTransactions += result.updatedTransactions
-        totalProcessed += result.totalProcessed
-        totalSyncedAccounts += result.syncedAccounts || 0
+      try {
+        const result = await syncPlaidTransactions(item.access_token, {
+          syncTransactions: item.sync_transactions,
+          syncBalances: item.sync_balances
+        })
+        
+        if (result.success) {
+          totalNewTransactions += result.newTransactions
+          totalUpdatedTransactions += result.updatedTransactions
+          totalProcessed += result.totalProcessed
+          totalSyncedAccounts += result.syncedAccounts || 0
+        } else {
+          errors.push(result.error || 'Unknown sync error')
+        }
+      } catch (itemError) {
+        console.error('Item sync error:', itemError)
+        errors.push(`Sync failed for one account: ${itemError instanceof Error ? itemError.message : 'Unknown error'}`)
       }
     }
 
     return NextResponse.json({ 
-      success: true,
+      success: errors.length === 0,
       newTransactions: totalNewTransactions,
       updatedTransactions: totalUpdatedTransactions,
       totalProcessed: totalProcessed,
       syncedAccounts: totalSyncedAccounts,
-      message: 'Transactions synced successfully'
+      message: errors.length === 0 ? 'Transactions synced successfully' : `Partial sync completed with ${errors.length} errors`,
+      errors: errors.length > 0 ? errors : undefined
     })
 
   } catch (error) {
     console.error('Sync error:', error)
-    return NextResponse.json({ error: 'Sync failed' }, { status: 500 })
+    return NextResponse.json({ 
+      error: error instanceof Error ? error.message : 'Sync failed' 
+    }, { status: 500 })
   }
 }

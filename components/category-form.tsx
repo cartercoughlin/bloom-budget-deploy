@@ -31,8 +31,6 @@ const PRESET_COLORS = [
   "#6B7280",
 ]
 
-const PRESET_ICONS = ["🛒", "🍽️", "🚗", "🎬", "🛍️", "💡", "🏥", "💰", "📦", "🏠", "📱", "✈️", "🎓", "⚽", "🎨"]
-
 export function CategoryForm({ category }: { category?: Category }) {
   const [name, setName] = useState(category?.name || "")
   const [color, setColor] = useState(category?.color || "#3B82F6")
@@ -98,21 +96,19 @@ export function CategoryForm({ category }: { category?: Category }) {
           </div>
 
           <div className="space-y-2">
-            <Label>Icon</Label>
-            <div className="grid grid-cols-5 md:grid-cols-8 gap-2">
-              {PRESET_ICONS.map((presetIcon) => (
-                <button
-                  key={presetIcon}
-                  type="button"
-                  onClick={() => setIcon(presetIcon)}
-                  className={`w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-lg md:text-2xl transition-all ${
-                    icon === presetIcon ? "ring-2 ring-primary scale-110" : "hover:scale-105 bg-muted"
-                  }`}
-                >
-                  {presetIcon}
-                </button>
-              ))}
-            </div>
+            <Label htmlFor="icon">Icon (Emoji)</Label>
+            <Input
+              id="icon"
+              type="text"
+              value={icon}
+              onChange={(e) => setIcon(e.target.value)}
+              placeholder="Enter any emoji 🛒"
+              className="text-2xl text-center"
+              maxLength={4}
+            />
+            <p className="text-xs text-muted-foreground">
+              Enter any emoji to represent this category
+            </p>
           </div>
 
           <div className="space-y-2">

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { plaidClient } from '@/lib/plaid'
 import { createClient } from '@/lib/supabase/server'
-import { ItemPublicTokenExchangeRequest } from 'plaid'
+import { ItemPublicTokenExchangeRequest, AccountsGetRequest, InstitutionsGetByIdRequest } from 'plaid'
 
 export async function POST(request: Request) {
   try {
@@ -18,6 +18,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    console.log('Exchanging public token...')
     const exchangeRequest: ItemPublicTokenExchangeRequest = {
       public_token,
     }
@@ -26,6 +27,47 @@ export async function POST(request: Request) {
     const accessToken = exchangeResponse.data.access_token
     const itemId = exchangeResponse.data.item_id
 
+    console.log('Getting account details...')
+    // Get account details
+    const accountsRequest: AccountsGetRequest = {
+      access_token: accessToken,
+    }
+    const accountsResponse = await plaidClient.accountsGet(accountsRequest)
+    const accounts = accountsResponse.data.accounts
+
+    console.log('Found accounts:', accounts.map(acc => ({ 
+      name: acc.name, 
+      type: acc.type, 
+      subtype: acc.subtype,
+      official_name: acc.official_name 
+    })))
+
+    // Get institution name using institution_id
+    let institutionName = 'Connected Account'
+    if (accounts.length > 0 && accounts[0].institution_id) {
+      try {
+        const institutionRequest: InstitutionsGetByIdRequest = {
+          institution_id: accounts[0].institution_id,
+          country_codes: ['US'],
+        }
+        const institutionResponse = await plaidClient.institutionsGetById(institutionRequest)
+        institutionName = institutionResponse.data.institution.name
+        console.log('Institution name:', institutionName)
+      } catch (error) {
+        console.error('Failed to get institution name:', error)
+        institutionName = accounts[0]?.official_name || accounts[0]?.name || 'Connected Account'
+      }
+    }
+
+    // Create account names with proper institution context
+    const accountNames = accounts.map(acc => {
+      const accountName = acc.official_name || acc.name
+      const typeInfo = acc.subtype ? ` (${acc.subtype})` : ` (${acc.type})`
+      return accountName + typeInfo
+    }).join(', ')
+
+    console.log('Storing account info:', { accountNames, institutionName })
+
     // Store access token in database
     const { error } = await supabase
       .from('plaid_items')
@@ -33,6 +75,8 @@ export async function POST(request: Request) {
         user_id: user.id,
         item_id: itemId,
         access_token: accessToken,
+        account_name: accountNames,
+        institution_name: institutionName,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }, {
@@ -49,8 +93,11 @@ export async function POST(request: Request) {
       item_id: itemId 
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Token exchange error:', error)
+    if (error.response?.data) {
+      console.error('Plaid API error:', error.response.data)
+    }
     return NextResponse.json({ error: 'Failed to exchange token' }, { status: 500 })
   }
 }

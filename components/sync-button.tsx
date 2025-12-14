@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { cache } from '@/lib/capacitor'
 
 export function SyncButton() {
   const [isLoading, setIsLoading] = useState(false)
@@ -23,6 +24,11 @@ export function SyncButton() {
 
         if (data.success) {
           toast.success(`Synced ${data.newTransactions} new transactions`)
+          
+          // Clear cached data
+          await cache.remove('transactions-page')
+          await cache.remove('dashboard-data')
+          
           router.refresh()
         } else {
           toast.error(data.error || 'Sync failed')
