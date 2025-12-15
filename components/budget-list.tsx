@@ -237,8 +237,13 @@ export function BudgetList({ budgets: initialBudgets, categories: initialCategor
             const expenses = categoryData.expenses
             const income = categoryData.income
             const net = categoryData.net
-            const percentage = (expenses / Number(budget.amount)) * 100
-            const isOverBudget = expenses > Number(budget.amount)
+
+            // For income categories (income > expenses), net is negative, so don't show budget usage
+            // For expense categories, show net spending (expenses - income) against budget
+            const netSpending = Math.max(0, expenses - income) // Don't go negative
+            const percentage = (netSpending / Number(budget.amount)) * 100
+            const isOverBudget = netSpending > Number(budget.amount)
+            const isIncomeCategory = income > expenses
 
             return (
               <Card key={budget.id}>
@@ -256,11 +261,20 @@ export function BudgetList({ budgets: initialBudgets, categories: initialCategor
                       <div>
                         <CardTitle className="text-sm md:text-lg">{budget.categories?.name}</CardTitle>
                         <CardDescription className="text-xs md:text-sm">
-                          Expenses: ${expenses.toFixed(2)} of ${Number(budget.amount).toFixed(2)}
-                          {income > 0 && (
-                            <span className="text-green-600 ml-2">
-                              • Income: ${income.toFixed(2)}
-                            </span>
+                          {isIncomeCategory ? (
+                            <>
+                              Income: ${income.toFixed(2)}
+                              {expenses > 0 && <span className="text-muted-foreground ml-2">• Expenses: ${expenses.toFixed(2)}</span>}
+                            </>
+                          ) : (
+                            <>
+                              Net Spending: ${netSpending.toFixed(2)} of ${Number(budget.amount).toFixed(2)}
+                              {income > 0 && (
+                                <span className="text-green-600 ml-2">
+                                  • Income offset: ${income.toFixed(2)}
+                                </span>
+                              )}
+                            </>
                           )}
                         </CardDescription>
                       </div>
@@ -297,10 +311,13 @@ export function BudgetList({ budgets: initialBudgets, categories: initialCategor
                   </div>
                   <div className="flex justify-between text-xs md:text-sm">
                     <span className={isOverBudget ? "text-red-600 font-medium" : "text-muted-foreground"}>
-                      {percentage.toFixed(1)}% used
+                      {isIncomeCategory ? "Income category" : `${percentage.toFixed(1)}% used`}
                     </span>
                     <span className={isOverBudget ? "text-red-600 font-medium" : "text-green-600"}>
-                      ${Math.abs(Number(budget.amount) - expenses).toFixed(2)} {isOverBudget ? "over budget" : "remaining"}
+                      {isIncomeCategory
+                        ? `Net: +$${Math.abs(net).toFixed(2)}`
+                        : `$${Math.abs(Number(budget.amount) - netSpending).toFixed(2)} ${isOverBudget ? "over budget" : "remaining"}`
+                      }
                     </span>
                   </div>
                 </CardContent>
