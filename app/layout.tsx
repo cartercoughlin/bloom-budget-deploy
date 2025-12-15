@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { RegisterServiceWorker } from "./register-sw"
+import { PWAUpdatePrompt } from "@/components/pwa-update-prompt"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -71,6 +72,7 @@ export default function RootLayout({
         {children}
         <Analytics />
         <RegisterServiceWorker />
+        <PWAUpdatePrompt />
       </body>
     </html>
   )
