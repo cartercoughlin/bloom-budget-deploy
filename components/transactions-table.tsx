@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
@@ -187,31 +186,31 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
 
   if (transactions.length === 0) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12 md:py-16">
+      <div className="sm:bg-card sm:border sm:rounded-lg">
+        <div className="flex flex-col items-center justify-center py-12 md:py-16 px-6">
           <Upload className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground mb-3 md:mb-4" />
           <h3 className="text-base md:text-lg font-semibold mb-1 md:mb-2">No transactions yet</h3>
           <p className="text-muted-foreground text-center text-xs md:text-sm mb-4 md:mb-6">Import your first transactions to get started</p>
           <Link href="/transactions/import">
-            <Button className="text-xs md:text-sm h-8 md:h-10">
+            <Button className="text-xs md:text-sm h-8 md:h-10 bg-gradient-fern hover:bg-gradient-fern-light">
               <Upload className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
               Import Transactions
             </Button>
           </Link>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-4 md:pb-6">
+    <div className="sm:bg-card sm:border sm:rounded-lg">
+      <div className="p-4 sm:p-6 border-b sm:border-b-border border-b-transparent">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base md:text-lg">Transactions</CardTitle>
-            <CardDescription className="text-xs md:text-sm">
+            <h2 className="text-base md:text-lg font-semibold">Transactions</h2>
+            <p className="text-xs md:text-sm text-muted-foreground">
               {filteredTransactions.length} of {transactions.length} transactions
-            </CardDescription>
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <Button 
@@ -234,7 +233,7 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
 
         {/* Collapsible Filters */}
         {showFilters && (
-          <div className="space-y-3 mt-4 p-4 bg-muted/30 rounded-lg">
+          <div className="space-y-3 mt-4 p-4 bg-gradient-fern-subtle rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
           <Input
             placeholder="Search transactions..."
@@ -340,16 +339,16 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
           </div>
           </div>
         )}
-      </CardHeader>
+      </div>
 
-      <CardContent className="p-0 sm:p-6">
+      <div className="sm:p-6 p-0">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="border-b">
               <tr>
                 <th className="text-left p-2 md:p-3 text-[10px] md:text-sm font-medium">Date</th>
                 <th className="text-left p-2 md:p-3 text-[10px] md:text-sm font-medium">Description</th>
-                <th className="text-left p-2 md:p-3 text-[10px] md:text-sm font-medium">Category</th>
+                <th className="text-left p-2 md:p-3 text-[10px] md:text-sm font-medium w-20 md:w-48">Category</th>
                 <th className="text-left p-2 md:p-3 text-[10px] md:text-sm font-medium hidden sm:table-cell">Bank</th>
                 <th className="text-right p-2 md:p-3 text-[10px] md:text-sm font-medium">Amount</th>
                 <th className="text-right p-2 md:p-3 text-[10px] md:text-sm font-medium">Actions</th>
@@ -398,7 +397,7 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
                       </div>
                     </div>
                   </td>
-                  <td className="p-2 md:p-3 text-[10px] md:text-sm min-w-20 md:min-w-48">
+                  <td className="p-2 md:p-3 text-[10px] md:text-sm w-20 md:w-48">
                     {txId ? (
                       <TransactionCategorizer
                         transactionId={txId}
@@ -454,7 +453,7 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
             </tbody>
           </table>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

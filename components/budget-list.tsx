@@ -339,7 +339,7 @@ export function BudgetList({
                     <Progress
                       value={Math.min(percentage, 100)}
                       className={`h-1.5 md:h-2 ${isOverBudget ? "bg-red-100" : undefined}`}
-                      indicatorClassName={isOverBudget ? "bg-red-600" : undefined}
+                      indicatorClassName={isOverBudget ? "progress-gradient-over" : "progress-gradient"}
                     />
                     {percentageThroughMonth !== null && !isIncomeCategory && (
                       <div
