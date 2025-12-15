@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prebuild": "node scripts/update-sw-version.js",
     "build": "next build",
     "build:mobile": "next build && npx cap sync",
     "dev": "next dev",

@@ -162,7 +162,10 @@ export function TransactionCategorizer({
     <div className="space-y-2">
       {currentCategory ? (
         <button
-          onClick={() => handleCategorySelect("")}
+          onClick={(e) => {
+            e.stopPropagation()
+            handleCategorySelect("")
+          }}
           className="inline-flex items-center gap-1 px-2 h-8 rounded-md text-xs hover:opacity-80 transition-opacity cursor-pointer"
           style={{ backgroundColor: `${currentCategory.color}20`, color: currentCategory.color }}
           title="Click to change category"
@@ -183,7 +186,10 @@ export function TransactionCategorizer({
                     variant="outline"
                     size="sm"
                     className="h-6 px-2 text-xs justify-start"
-                    onClick={() => handleCategorySelect(suggestion.categoryId)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleCategorySelect(suggestion.categoryId)
+                    }}
                   >
                     <div className="flex items-center gap-1">
                       <div
@@ -202,7 +208,7 @@ export function TransactionCategorizer({
           )}
 
           <Select onValueChange={handleCategorySelect} onOpenChange={(open) => open && handleSelectOpen()}>
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className="h-8 text-xs" onClick={(e) => e.stopPropagation()}>
               <SelectValue placeholder="Select category..." />
             </SelectTrigger>
             <SelectContent>
