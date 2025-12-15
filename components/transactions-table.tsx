@@ -342,16 +342,16 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
       </div>
 
       <div className="sm:p-6 p-0">
-        <div className="overflow-x-auto -mx-3 sm:mx-0">
+        <div className="overflow-x-auto pl-3 sm:pl-0">
           <table className="w-full min-w-full">
             <thead className="border-b">
               <tr>
-                <th className="text-left p-2 md:p-3 text-[10px] md:text-sm font-medium w-16 md:w-auto">Date</th>
+                <th className="text-left p-2 md:p-3 text-[10px] md:text-sm font-medium w-12 md:w-auto">Date</th>
                 <th className="text-left p-2 md:p-3 text-[10px] md:text-sm font-medium">Description</th>
-                <th className="text-left p-2 md:p-3 text-[10px] md:text-sm font-medium w-16 md:w-48">Category</th>
-                <th className="text-left p-2 md:p-3 text-[10px] md:text-sm font-medium hidden sm:table-cell">Bank</th>
-                <th className="text-right p-2 md:p-3 text-[10px] md:text-sm font-medium w-20 md:w-auto">Amount</th>
-                <th className="text-right p-2 md:p-3 text-[10px] md:text-sm font-medium w-16 md:w-auto">Actions</th>
+                <th className="text-left p-2 md:p-3 text-[10px] md:text-sm font-medium w-12 md:w-40">Category</th>
+                <th className="text-left p-2 md:p-3 text-[10px] md:text-sm font-medium hidden sm:table-cell w-16">Bank</th>
+                <th className="text-right p-2 md:p-3 text-[10px] md:text-sm font-medium w-16 md:w-auto">Amount</th>
+                <th className="text-right p-2 md:p-3 text-[10px] md:text-sm font-medium w-12 md:w-auto">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -398,7 +398,7 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
                       </div>
                     </div>
                   </td>
-                  <td className="p-1 md:p-3 text-[9px] md:text-sm w-16 md:w-48">
+                  <td className="p-1 md:p-3 text-[9px] md:text-sm w-12 md:w-40">
                     {txId ? (
                       <TransactionCategorizer
                         transactionId={txId}
@@ -418,7 +418,7 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
                       </span>
                     )}
                   </td>
-                  <td className="p-1 md:p-3 text-[9px] md:text-sm capitalize hidden sm:table-cell">{tx.bank}</td>
+                  <td className="p-1 md:p-3 text-[9px] md:text-sm capitalize hidden sm:table-cell w-16">{tx.bank}</td>
                   <td
                     className={`p-1 md:p-3 text-[9px] md:text-sm text-right font-medium whitespace-nowrap ${
                       tx.transaction_type === "credit" ? "text-green-600" : "text-red-600"
