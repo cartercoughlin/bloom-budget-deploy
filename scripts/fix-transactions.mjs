@@ -37,92 +37,110 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function fixTransactionTypes() {
   try {
-    // First, get a count of current transaction types
-    console.log('📊 Current transaction type counts:');
-    const { data: beforeData, error: beforeError } = await supabase
-      .from('transactions')
-      .select('transaction_type, amount');
+    // The code fix was deployed at 2025-12-14 22:39:17 UTC
+    // Only swap transactions created AFTER this time (they have correct types but were reversed by blanket swap)
+    const CODE_FIX_TIMESTAMP = '2025-12-14T22:39:17+00:00';
 
-    if (beforeError) {
-      throw beforeError;
+    console.log('📊 Analyzing transactions by creation time...\n');
+
+    // Get all transactions
+    const { data: allData, error: allError } = await supabase
+      .from('transactions')
+      .select('transaction_type, created_at');
+
+    if (allError) throw allError;
+
+    const oldTxns = allData.filter(t => new Date(t.created_at) < new Date(CODE_FIX_TIMESTAMP));
+    const newTxns = allData.filter(t => new Date(t.created_at) >= new Date(CODE_FIX_TIMESTAMP));
+
+    console.log(`   OLD transactions (before code fix): ${oldTxns.length}`);
+    console.log(`   NEW transactions (after code fix): ${newTxns.length}`);
+    console.log(`   Code fix timestamp: ${CODE_FIX_TIMESTAMP}\n`);
+
+    // Show breakdown
+    console.log('📊 Current state:');
+    console.log('   OLD transactions (should be swapped already):');
+    console.log(`      Credit: ${oldTxns.filter(t => t.transaction_type === 'credit').length}`);
+    console.log(`      Debit: ${oldTxns.filter(t => t.transaction_type === 'debit').length}`);
+    console.log('   NEW transactions (need to be swapped back):');
+    console.log(`      Credit: ${newTxns.filter(t => t.transaction_type === 'credit').length}`);
+    console.log(`      Debit: ${newTxns.filter(t => t.transaction_type === 'debit').length}\n`);
+
+    // Get transactions created AFTER the fix (these need to be swapped back)
+    const { data: newCreditTxns, error: newCreditError } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('transaction_type', 'credit')
+      .gte('created_at', CODE_FIX_TIMESTAMP);
+
+    if (newCreditError) throw newCreditError;
+
+    const { data: newDebitTxns, error: newDebitError } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('transaction_type', 'debit')
+      .gte('created_at', CODE_FIX_TIMESTAMP);
+
+    if (newDebitError) throw newDebitError;
+
+    console.log(`🔧 Swapping ${newCreditTxns.length + newDebitTxns.length} NEW transactions back to correct state...\n`);
+
+    // Update new credits to temp
+    if (newCreditTxns.length > 0) {
+      console.log(`   Updating ${newCreditTxns.length} credit → temp...`);
+      const { error: tempError } = await supabase
+        .from('transactions')
+        .update({ transaction_type: 'temp_swap' })
+        .eq('transaction_type', 'credit')
+        .gte('created_at', CODE_FIX_TIMESTAMP);
+
+      if (tempError) throw tempError;
     }
 
-    const beforeCounts = {
-      credit: beforeData.filter(t => t.transaction_type === 'credit').length,
-      debit: beforeData.filter(t => t.transaction_type === 'debit').length,
-    };
+    // Update new debits to credit
+    if (newDebitTxns.length > 0) {
+      console.log(`   Updating ${newDebitTxns.length} debit → credit...`);
+      const { error: debitUpdateError } = await supabase
+        .from('transactions')
+        .update({ transaction_type: 'credit' })
+        .eq('transaction_type', 'debit')
+        .gte('created_at', CODE_FIX_TIMESTAMP);
 
-    console.log(`   Credit (income): ${beforeCounts.credit}`);
-    console.log(`   Debit (expense): ${beforeCounts.debit}\n`);
-
-    // Execute the swap using RPC function (we'll need to create this)
-    // Since Supabase doesn't allow direct UPDATE via REST API easily,
-    // we'll do it in batches using the client
-
-    console.log('🔧 Swapping transaction types...');
-
-    // Get all credit transactions
-    const { data: creditTxns, error: creditError } = await supabase
-      .from('transactions')
-      .select('id')
-      .eq('transaction_type', 'credit');
-
-    if (creditError) throw creditError;
-
-    // Get all debit transactions
-    const { data: debitTxns, error: debitError } = await supabase
-      .from('transactions')
-      .select('id')
-      .eq('transaction_type', 'debit');
-
-    if (debitError) throw debitError;
-
-    // Update credits to a temporary value first
-    console.log(`   Updating ${creditTxns.length} credit → temp...`);
-    const { error: tempError } = await supabase
-      .from('transactions')
-      .update({ transaction_type: 'temp_swap' })
-      .eq('transaction_type', 'credit');
-
-    if (tempError) throw tempError;
-
-    // Update debits to credit
-    console.log(`   Updating ${debitTxns.length} debit → credit...`);
-    const { error: debitUpdateError } = await supabase
-      .from('transactions')
-      .update({ transaction_type: 'credit' })
-      .eq('transaction_type', 'debit');
-
-    if (debitUpdateError) throw debitUpdateError;
+      if (debitUpdateError) throw debitUpdateError;
+    }
 
     // Update temp to debit
-    console.log(`   Updating ${creditTxns.length} temp → debit...`);
-    const { error: creditUpdateError } = await supabase
+    if (newCreditTxns.length > 0) {
+      console.log(`   Updating ${newCreditTxns.length} temp → debit...`);
+      const { error: creditUpdateError } = await supabase
+        .from('transactions')
+        .update({ transaction_type: 'debit' })
+        .eq('transaction_type', 'temp_swap');
+
+      if (creditUpdateError) throw creditUpdateError;
+    }
+
+    console.log('\n✅ Fix complete!\n');
+
+    // Verify final state
+    const { data: finalData, error: finalError } = await supabase
       .from('transactions')
-      .update({ transaction_type: 'debit' })
-      .eq('transaction_type', 'temp_swap');
+      .select('transaction_type, created_at');
 
-    if (creditUpdateError) throw creditUpdateError;
+    if (finalError) throw finalError;
 
-    // Verify the swap
-    console.log('\n✅ Swap complete!\n');
-    console.log('📊 New transaction type counts:');
+    const finalOld = finalData.filter(t => new Date(t.created_at) < new Date(CODE_FIX_TIMESTAMP));
+    const finalNew = finalData.filter(t => new Date(t.created_at) >= new Date(CODE_FIX_TIMESTAMP));
 
-    const { data: afterData, error: afterError } = await supabase
-      .from('transactions')
-      .select('transaction_type, amount');
+    console.log('📊 Final state:');
+    console.log('   OLD transactions (swapped):');
+    console.log(`      Credit: ${finalOld.filter(t => t.transaction_type === 'credit').length}`);
+    console.log(`      Debit: ${finalOld.filter(t => t.transaction_type === 'debit').length}`);
+    console.log('   NEW transactions (correct):');
+    console.log(`      Credit: ${finalNew.filter(t => t.transaction_type === 'credit').length}`);
+    console.log(`      Debit: ${finalNew.filter(t => t.transaction_type === 'debit').length}\n`);
 
-    if (afterError) throw afterError;
-
-    const afterCounts = {
-      credit: afterData.filter(t => t.transaction_type === 'credit').length,
-      debit: afterData.filter(t => t.transaction_type === 'debit').length,
-    };
-
-    console.log(`   Credit (income): ${afterCounts.credit} (was ${beforeCounts.credit})`);
-    console.log(`   Debit (expense): ${afterCounts.debit} (was ${beforeCounts.debit})\n`);
-
-    console.log('✨ Transaction types have been corrected!\n');
+    console.log('✨ All transaction types are now correct!\n');
 
   } catch (error) {
     console.error('❌ Error fixing transaction types:', error.message);
