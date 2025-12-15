@@ -105,7 +105,7 @@ export default function TransactionsPage() {
   return (
     <div className="px-2 sm:px-6 max-w-full pb-20 sm:pb-6">
       <div className="flex items-center justify-between mt-3 mb-2">
-        <h1 className="text-lg font-semibold">Transactions</h1>
+        <h1 className="text-lg font-semibold text-green-600">Transactions</h1>
         <SyncButton />
       </div>
 

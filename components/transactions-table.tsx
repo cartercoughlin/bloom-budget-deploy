@@ -64,6 +64,7 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
   const [showHidden, setShowHidden] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
+  const [categoryJustChanged, setCategoryJustChanged] = useState<string | null>(null)
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
@@ -191,6 +192,10 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
           : tx
       )
     )
+
+    // Prevent modal from opening for a short time after category change
+    setCategoryJustChanged(transactionId)
+    setTimeout(() => setCategoryJustChanged(null), 300)
   }
 
   const clearFilters = () => {
@@ -388,7 +393,11 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
                     <div 
                       key={txId} 
                       className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer md:cursor-default"
-                      onClick={() => window.innerWidth < 768 && setSelectedTransaction(tx)}
+                      onClick={() => {
+                        if (window.innerWidth < 768 && categoryJustChanged !== txId) {
+                          setSelectedTransaction(tx)
+                        }
+                      }}
                     >
                       {/* Logo - Desktop only */}
                       {tx.logo_url && (

@@ -83,6 +83,13 @@ export function TransactionCategorizer({
     }
   }
 
+  const handleCategorySelectWithStopPropagation = (categoryId: string) => {
+    // Prevent the modal from opening after category selection
+    setTimeout(() => {
+      handleCategorySelect(categoryId)
+    }, 0)
+  }
+
   const handleCategorySelect = async (categoryId: string) => {
     if (!transactionId || transactionId === 'undefined' || transactionId === 'null') {
       console.error('Invalid transaction ID:', transactionId)
@@ -207,7 +214,7 @@ export function TransactionCategorizer({
             </div>
           )}
 
-          <Select onValueChange={handleCategorySelect} onOpenChange={(open) => open && handleSelectOpen()}>
+          <Select onValueChange={handleCategorySelectWithStopPropagation} onOpenChange={(open) => open && handleSelectOpen()}>
             <SelectTrigger className="h-8 text-xs" onClick={(e) => e.stopPropagation()}>
               <SelectValue placeholder="Select category..." />
             </SelectTrigger>

@@ -1,8 +1,7 @@
--- Remove duplicate transactions (keep the most recent one)
--- This handles duplicates created from pending->cleared transaction syncs
--- Accounts for date changes and case differences between pending and cleared states
+-- Clean up duplicate transactions and data inconsistencies
+-- Run this on existing databases to remove duplicates
 
--- First, show what will be removed
+-- Remove duplicate transactions (case-insensitive matching)
 WITH similar_transactions AS (
   SELECT 
     t1.id as id1,
@@ -31,8 +30,8 @@ WITH similar_transactions AS (
       )
     )
   )
-  WHERE t1.created_at >= NOW() - INTERVAL '30 days'
-    AND t2.created_at >= NOW() - INTERVAL '30 days'
+  WHERE t1.created_at >= NOW() - INTERVAL '60 days'
+    AND t2.created_at >= NOW() - INTERVAL '60 days'
 ),
 duplicates_to_remove AS (
   SELECT 
@@ -43,13 +42,13 @@ duplicates_to_remove AS (
   FROM similar_transactions
 )
 
--- Delete the older duplicates and show count
+-- Delete the older duplicates
 DELETE FROM transactions 
 WHERE id IN (SELECT duplicate_id FROM duplicates_to_remove);
 
--- Show final summary
+-- Show cleanup summary
 SELECT 
   'Cleanup completed' as status,
   COUNT(*) as remaining_recent_transactions
 FROM transactions 
-WHERE created_at >= NOW() - INTERVAL '30 days';
+WHERE created_at >= NOW() - INTERVAL '60 days';
