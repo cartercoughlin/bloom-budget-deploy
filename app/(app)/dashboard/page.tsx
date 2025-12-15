@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { SpendingOverview } from "@/components/spending-overview"
 import { SpendingByCategory } from "@/components/spending-by-category"
+import { IncomeByCategory } from "@/components/income-by-category"
 import { MonthlyTrend } from "@/components/monthly-trend"
 import { cache } from "@/lib/capacitor"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -135,8 +136,10 @@ export default function DashboardPage() {
 
         <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
           <SpendingByCategory transactions={currentMonthTransactions} />
-          <MonthlyTrend transactions={trendTransactions} />
+          <IncomeByCategory transactions={currentMonthTransactions} />
         </div>
+
+        <MonthlyTrend transactions={trendTransactions} />
       </div>
     </div>
   )
