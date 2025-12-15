@@ -204,27 +204,24 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
 
   return (
     <div className="sm:bg-card sm:border sm:rounded-lg">
-      <div className="p-4 sm:p-6 border-b sm:border-b-border border-b-transparent">
+      <div className="p-2 sm:p-4 border-b sm:border-b-border border-b-transparent">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-base md:text-lg font-semibold">Transactions</h2>
-            <p className="text-xs md:text-sm text-muted-foreground">
-              {filteredTransactions.length} of {transactions.length} transactions
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
+          <p className="text-xs text-muted-foreground">
+            {filteredTransactions.length} of {transactions.length}
+          </p>
+          <div className="flex items-center gap-1">
             <Button 
               variant="outline" 
               size="sm" 
               onClick={() => setShowFilters(!showFilters)}
-              className="text-xs md:text-sm h-7 md:h-9 px-2 md:px-3"
+              className="text-xs h-7 px-2"
             >
-              <Filter className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+              <Filter className="mr-1 h-3 w-3" />
               <span className="hidden sm:inline">Filters</span>
             </Button>
             {hasActiveFilters && (
-              <Button variant="outline" size="sm" onClick={clearFilters} className="text-xs md:text-sm h-7 md:h-9 px-2 md:px-3">
-                <X className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+              <Button variant="outline" size="sm" onClick={clearFilters} className="text-xs h-7 px-2">
+                <X className="mr-1 h-3 w-3" />
                 <span className="hidden sm:inline">Clear</span>
               </Button>
             )}
@@ -341,19 +338,9 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
         )}
       </div>
 
-      <div className="sm:p-6 p-0">
-        <div className="overflow-x-auto pl-3 sm:pl-0">
+      <div className="sm:p-4 p-0">
+        <div className="overflow-x-auto pl-1 sm:pl-0">
           <table className="w-full min-w-full">
-            <thead className="border-b">
-              <tr>
-                <th className="text-left p-2 md:p-3 text-[10px] md:text-sm font-medium w-12 md:w-auto">Date</th>
-                <th className="text-left p-2 md:p-3 text-[10px] md:text-sm font-medium">Description</th>
-                <th className="text-left p-2 md:p-3 text-[10px] md:text-sm font-medium w-12 md:w-40">Category</th>
-                <th className="text-left p-2 md:p-3 text-[10px] md:text-sm font-medium hidden sm:table-cell w-16">Bank</th>
-                <th className="text-right p-2 md:p-3 text-[10px] md:text-sm font-medium w-16 md:w-auto">Amount</th>
-                <th className="text-right p-2 md:p-3 text-[10px] md:text-sm font-medium w-12 md:w-auto">Actions</th>
-              </tr>
-            </thead>
             <tbody className="divide-y">
               {filteredTransactions.map((tx, index) => {
                 console.log('Full transaction object:', tx)
