@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CalendarIcon, Filter, X, Upload, EyeOff, Eye, Repeat } from "lucide-react"
 import { format } from "date-fns"
 import { TransactionCategorizer } from "./transaction-categorizer"
@@ -62,6 +63,7 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
   const [amountMax, setAmountMax] = useState("")
   const [showHidden, setShowHidden] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
@@ -357,7 +359,10 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
                     <div className="hidden md:block">{new Date(tx.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
                   </td>
                   <td className="p-1 md:p-3 text-[9px] md:text-sm">
-                    <div className="flex items-center gap-1 md:gap-2">
+                    <div 
+                      className="flex items-center gap-1 md:gap-2 cursor-pointer md:cursor-default"
+                      onClick={() => window.innerWidth < 768 && setSelectedTransaction(tx)}
+                    >
                       {tx.logo_url && (
                         <img 
                           src={tx.logo_url} 
@@ -369,12 +374,37 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
                         />
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1">
-                          <span className="truncate text-[9px] md:text-sm">{tx.merchant_name || tx.description}</span>
-                          {tx.recurring && (
-                            <Badge variant="outline" className="text-[7px] md:text-[10px] px-0.5 py-0 h-3 md:h-5 flex-shrink-0">
-                              <Repeat className="h-2 w-2 md:h-3 md:w-3" />
-                            </Badge>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1 min-w-0 flex-1">
+                            <span className="truncate text-[9px] md:text-sm">{tx.merchant_name || tx.description}</span>
+                            {tx.recurring && (
+                              <Badge variant="outline" className="text-[7px] md:text-[10px] px-0.5 py-0 h-3 md:h-5 flex-shrink-0">
+                                <Repeat className="h-2 w-2 md:h-3 md:w-3" />
+                              </Badge>
+                            )}
+                          </div>
+                          {/* Mobile: Amount on the right */}
+                          <span className={`md:hidden text-[10px] font-medium ml-2 ${
+                            tx.transaction_type === "credit" ? "text-green-600" : "text-red-600"
+                          }`}>
+                            {tx.transaction_type === "credit" ? "+" : "-"}${Math.round(tx.amount)}
+                          </span>
+                        </div>
+                        {/* Mobile: Category below transaction name */}
+                        <div className="md:hidden mt-1">
+                          {txId ? (
+                            <TransactionCategorizer
+                              transactionId={txId}
+                              description={tx.description}
+                              amount={tx.amount}
+                              currentCategoryId={tx.category_id}
+                              categories={categories}
+                              onCategoryChange={(categoryId, newCategory) => {
+                                handleCategoryChange(txId, categoryId, newCategory)
+                              }}
+                            />
+                          ) : (
+                            <span className="text-muted-foreground text-[8px]">No ID</span>
                           )}
                         </div>
                         {tx.category_detailed && (
@@ -382,38 +412,10 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
                             {tx.category_detailed}
                           </div>
                         )}
-                        {/* Mobile: Amount and Actions under description */}
-                        <div className="md:hidden flex items-center justify-between mt-1">
-                          <span className={`text-[10px] font-medium ${
-                            tx.transaction_type === "credit" ? "text-green-600" : "text-red-600"
-                          }`}>
-                            {tx.transaction_type === "credit" ? "+" : "-"}${Math.round(tx.amount)}
-                          </span>
-                          <div className="flex items-center gap-0.5">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleToggleRecurring(txId, tx.recurring || false)}
-                              className={`h-5 px-0.5 ${tx.recurring ? 'text-blue-600' : ''}`}
-                              title={tx.recurring ? "Mark as non-recurring" : "Mark as recurring"}
-                            >
-                              <Repeat className="h-2.5 w-2.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleToggleHidden(txId, tx.hidden || false)}
-                              className="h-5 px-0.5"
-                              title={tx.hidden ? "Show transaction" : "Hide transaction"}
-                            >
-                              {tx.hidden ? <Eye className="h-2.5 w-2.5" /> : <EyeOff className="h-2.5 w-2.5" />}
-                            </Button>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </td>
-                  <td className="p-1 md:p-3 text-[9px] md:text-sm w-12 md:w-40">
+                  <td className="p-1 md:p-3 text-[9px] md:text-sm w-12 md:w-40 hidden md:table-cell">
                     {txId ? (
                       <TransactionCategorizer
                         transactionId={txId}
@@ -470,6 +472,89 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
           </table>
         </div>
       </div>
+
+      {/* Mobile Transaction Detail Modal */}
+      <Dialog open={!!selectedTransaction} onOpenChange={() => setSelectedTransaction(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Transaction Details</DialogTitle>
+          </DialogHeader>
+          {selectedTransaction && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                {selectedTransaction.logo_url && (
+                  <img 
+                    src={selectedTransaction.logo_url} 
+                    alt={selectedTransaction.merchant_name || selectedTransaction.description}
+                    className="w-8 h-8 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                )}
+                <div className="flex-1">
+                  <h3 className="font-medium">{selectedTransaction.merchant_name || selectedTransaction.description}</h3>
+                  <p className="text-sm text-muted-foreground">{selectedTransaction.bank}</p>
+                </div>
+                <div className={`text-lg font-semibold ${
+                  selectedTransaction.transaction_type === "credit" ? "text-green-600" : "text-red-600"
+                }`}>
+                  {selectedTransaction.transaction_type === "credit" ? "+" : "-"}${selectedTransaction.amount.toFixed(2)}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Category</label>
+                <div className="mt-1">
+                  <TransactionCategorizer
+                    transactionId={selectedTransaction.id}
+                    description={selectedTransaction.description}
+                    amount={selectedTransaction.amount}
+                    currentCategoryId={selectedTransaction.category_id}
+                    categories={categories}
+                    onCategoryChange={(categoryId, newCategory) => {
+                      handleCategoryChange(selectedTransaction.id, categoryId, newCategory)
+                      // Update the selected transaction to reflect the change
+                      setSelectedTransaction(prev => prev ? {
+                        ...prev,
+                        category_id: categoryId || undefined,
+                        categories: categoryId ? (newCategory || categories.find(c => c.id === categoryId)) : undefined
+                      } : null)
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant={selectedTransaction.recurring ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    handleToggleRecurring(selectedTransaction.id, selectedTransaction.recurring || false)
+                    setSelectedTransaction(prev => prev ? { ...prev, recurring: !prev.recurring } : null)
+                  }}
+                  className="flex-1"
+                >
+                  <Repeat className="mr-2 h-4 w-4" />
+                  {selectedTransaction.recurring ? "Recurring" : "Mark Recurring"}
+                </Button>
+                <Button
+                  variant={selectedTransaction.hidden ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    handleToggleHidden(selectedTransaction.id, selectedTransaction.hidden || false)
+                    setSelectedTransaction(prev => prev ? { ...prev, hidden: !prev.hidden } : null)
+                  }}
+                  className="flex-1"
+                >
+                  {selectedTransaction.hidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
+                  {selectedTransaction.hidden ? "Show" : "Hide"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
