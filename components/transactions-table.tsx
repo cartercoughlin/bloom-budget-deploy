@@ -382,8 +382,13 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
                         />
                       )}
                       <div className="truncate">
-                        <div className="truncate">
-                          {tx.merchant_name || tx.description}
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate">{tx.merchant_name || tx.description}</span>
+                          {tx.recurring && (
+                            <Badge variant="outline" className="text-[8px] md:text-[10px] px-1 py-0 h-4 md:h-5">
+                              <Repeat className="h-2.5 w-2.5 md:h-3 md:w-3" />
+                            </Badge>
+                          )}
                         </div>
                         {tx.category_detailed && (
                           <div className="text-[8px] md:text-xs text-muted-foreground truncate">
@@ -422,13 +427,13 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
                     {tx.transaction_type === "credit" ? "+" : "-"}${tx.amount.toFixed(2)}
                   </td>
                   <td className="p-2 md:p-3 text-[10px] md:text-sm text-right">
-                    <div className="flex gap-1 justify-end">
+                    <div className="flex items-center gap-1 justify-end">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleToggleRecurring(txId, tx.recurring || false)}
                         className={`h-6 md:h-7 px-1 md:px-2 ${tx.recurring ? 'text-blue-600' : ''}`}
-                        title={tx.recurring ? "Mark as one-time" : "Mark as recurring"}
+                        title={tx.recurring ? "Mark as non-recurring" : "Mark as recurring"}
                       >
                         <Repeat className="h-3 w-3 md:h-4 md:w-4" />
                       </Button>

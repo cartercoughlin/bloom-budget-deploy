@@ -42,9 +42,14 @@ interface Category {
 interface BudgetListProps {
   budgets: Budget[]
   categories: Category[]
+  netByCategory: Record<string, {
+    income: number
+    expenses: number
+    net: number
+    recurringExpenses: number
+    variableExpenses: number
+  }>
   spending: Record<string, number>
-  recurringExpenses: Record<string, number>
-  variableExpenses: Record<string, number>
   month: number
   year: number
 }
@@ -52,9 +57,8 @@ interface BudgetListProps {
 export function BudgetList({
   budgets: initialBudgets,
   categories: initialCategories,
+  netByCategory,
   spending,
-  recurringExpenses,
-  variableExpenses,
   month,
   year
 }: BudgetListProps) {
@@ -243,21 +247,43 @@ export function BudgetList({
       {budgets.length > 0 ? (
         <div className="grid gap-3 md:gap-4">
           {budgets.map((budget) => {
-            const spent = spending[budget.category_id] || 0
-            const recurring = recurringExpenses[budget.category_id] || 0
-            const variable = variableExpenses[budget.category_id] || 0
-            const percentage = (spent / Number(budget.amount)) * 100
+            const categoryData = netByCategory[budget.category_id] || {
+              income: 0,
+              expenses: 0,
+              net: 0,
+              recurringExpenses: 0,
+              variableExpenses: 0,
+            }
+            const expenses = categoryData.expenses
+            const income = categoryData.income
+            const net = categoryData.net
+            const recurringExpenses = categoryData.recurringExpenses
+            const variableExpenses = categoryData.variableExpenses
 
-            // Smart expected spending: recurring expenses (counted from day 1) + variable expenses (scaled by time through month)
-            const expectedSpending = percentageThroughMonth !== null
-              ? recurring + (variable * 0) + (Number(budget.amount) - recurring) * (percentageThroughMonth / 100)
-              : null
+            // For income categories (income > expenses), net is negative, so don't show budget usage
+            // For expense categories, show net spending (expenses - income) against budget
+            const netSpending = Math.max(0, expenses - income) // Don't go negative
+            const percentage = (netSpending / Number(budget.amount)) * 100
+            const isOverBudget = netSpending > Number(budget.amount)
+            const isIncomeCategory = income > expenses
 
-            const expectedPercentage = expectedSpending !== null
-              ? (expectedSpending / Number(budget.amount)) * 100
-              : null
+            // Calculate expected spending considering recurring vs variable expenses
+            // Recurring expenses are expected immediately, variable expenses scale through the month
+            const calculateExpectedSpending = () => {
+              if (percentageThroughMonth === null) return 0
 
-            const isOverBudget = spent > Number(budget.amount)
+              // Net recurring after income offset
+              const netRecurringExpenses = Math.max(0, recurringExpenses - income)
+              // Remaining variable expenses after any income offset applied to recurring
+              const netVariableExpenses = income > recurringExpenses
+                ? Math.max(0, variableExpenses - (income - recurringExpenses))
+                : variableExpenses
+
+              // Expected = recurring (immediate) + variable (scaled by time)
+              return netRecurringExpenses + (netVariableExpenses * (percentageThroughMonth / 100))
+            }
+
+            const expectedSpending = calculateExpectedSpending()
 
             return (
               <Card key={budget.id}>
@@ -275,17 +301,36 @@ export function BudgetList({
                       <div>
                         <CardTitle className="text-sm md:text-lg">{budget.categories?.name}</CardTitle>
                         <CardDescription className="text-xs md:text-sm">
-                          ${spent.toFixed(2)} of ${Number(budget.amount).toFixed(2)}
+                          {isIncomeCategory ? (
+                            <>
+                              Income: ${income.toFixed(2)}
+                              {expenses > 0 && <span className="text-muted-foreground ml-2">• Expenses: ${expenses.toFixed(2)}</span>}
+                            </>
+                          ) : (
+                            <>
+                              Net Spending: ${netSpending.toFixed(2)} of ${Number(budget.amount).toFixed(2)}
+                              {income > 0 && (
+                                <span className="text-green-600 ml-2">
+                                  • Income offset: ${income.toFixed(2)}
+                                </span>
+                              )}
+                            </>
+                          )}
                         </CardDescription>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 md:gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(budget)} className="h-7 w-7 md:h-9 md:w-9">
-                        <Edit className="h-3 w-3 md:h-4 md:w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(budget.id)} className="h-7 w-7 md:h-9 md:w-9">
-                        <Trash2 className="h-3 w-3 md:h-4 md:w-4 text-destructive" />
-                      </Button>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={`text-sm md:text-base font-bold ${net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {net >= 0 ? '+' : '-'}${Math.abs(net).toFixed(2)}
+                      </span>
+                      <div className="flex items-center gap-1 md:gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(budget)} className="h-7 w-7 md:h-9 md:w-9">
+                          <Edit className="h-3 w-3 md:h-4 md:w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(budget.id)} className="h-7 w-7 md:h-9 md:w-9">
+                          <Trash2 className="h-3 w-3 md:h-4 md:w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
@@ -296,23 +341,23 @@ export function BudgetList({
                       className={`h-1.5 md:h-2 ${isOverBudget ? "bg-red-100" : undefined}`}
                       indicatorClassName={isOverBudget ? "bg-red-600" : undefined}
                     />
-                    {expectedPercentage !== null && expectedSpending !== null && (
+                    {percentageThroughMonth !== null && !isIncomeCategory && (
                       <div
                         className="absolute -top-0.5 -bottom-0.5 md:-top-1 md:-bottom-1 w-0.5 bg-blue-500 z-10"
-                        style={{ left: `${Math.min(expectedPercentage, 100)}%` }}
-                        title={recurring > 0
-                          ? `Expected: $${expectedSpending.toFixed(2)} ($${recurring.toFixed(2)} recurring + $${(expectedSpending - recurring).toFixed(2)} variable)`
-                          : `Expected: $${expectedSpending.toFixed(2)}`
-                        }
+                        style={{ left: `${Math.min((expectedSpending / Number(budget.amount)) * 100, 100)}%` }}
+                        title={`Expected: $${expectedSpending.toFixed(2)} (${recurringExpenses > 0 ? `$${recurringExpenses.toFixed(2)} recurring + ` : ''}$${(variableExpenses * (percentageThroughMonth / 100)).toFixed(2)} variable)`}
                       />
                     )}
                   </div>
                   <div className="flex justify-between text-xs md:text-sm">
                     <span className={isOverBudget ? "text-red-600 font-medium" : "text-muted-foreground"}>
-                      {percentage.toFixed(1)}% used
+                      {isIncomeCategory ? "Income category" : `${percentage.toFixed(1)}% used`}
                     </span>
                     <span className={isOverBudget ? "text-red-600 font-medium" : "text-green-600"}>
-                      ${Math.abs(Number(budget.amount) - spent).toFixed(2)} {isOverBudget ? "over budget" : "remaining"}
+                      {isIncomeCategory
+                        ? `Net: +$${Math.abs(net).toFixed(2)}`
+                        : `$${Math.abs(Number(budget.amount) - netSpending).toFixed(2)} ${isOverBudget ? "over budget" : "remaining"}`
+                      }
                     </span>
                   </div>
                 </CardContent>

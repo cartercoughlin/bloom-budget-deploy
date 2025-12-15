@@ -6,6 +6,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     const {
@@ -16,22 +17,20 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { id: transactionId } = await params
-
-    if (!transactionId || transactionId === 'undefined' || transactionId === 'null') {
+    if (!id || id === 'undefined' || id === 'null') {
       return NextResponse.json({ error: "Invalid transaction ID" }, { status: 400 })
     }
 
     const { recurring } = await request.json()
 
-    if (typeof recurring !== 'boolean') {
+    if (typeof recurring !== "boolean") {
       return NextResponse.json({ error: "Recurring must be a boolean" }, { status: 400 })
     }
 
     const { data, error } = await supabase
       .from("transactions")
       .update({ recurring })
-      .eq("id", transactionId)
+      .eq("id", id)
       .eq("user_id", user.id)
       .select()
       .single()
