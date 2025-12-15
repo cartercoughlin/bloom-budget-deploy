@@ -161,8 +161,8 @@ export function BudgetOverview({ budgets, netByCategory, month, year }: BudgetOv
             {/* Expected spending line (only for variable expenses) */}
             {percentageThroughMonth !== null && (
               <div
-                className="absolute w-0.5 bg-blue-400 dark:bg-blue-300 z-10 shadow-sm dark:shadow-blue-400/50 dark:shadow-lg"
-                style={{ 
+                className="absolute w-1 bg-blue-600 dark:bg-blue-400 z-10 shadow-lg"
+                style={{
                   left: `${Math.min(recurringPercentage + ((100 - recurringPercentage) * (percentageThroughMonth / 100)), 100)}%`,
                   top: '-2px',
                   bottom: '-2px'
