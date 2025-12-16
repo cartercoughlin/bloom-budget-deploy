@@ -74,17 +74,18 @@ export async function POST() {
           syncTransactions: item.sync_transactions,
           syncBalances: item.sync_balances
         })
-        
+
+        // Always collect account IDs, even if sync failed
+        // This prevents cleanup from deleting transactions when there's a sync error
+        if (result.accountIds) {
+          allCurrentAccountIds = [...allCurrentAccountIds, ...result.accountIds]
+        }
+
         if (result.success) {
           totalNewTransactions += result.newTransactions
           totalUpdatedTransactions += result.updatedTransactions
           totalProcessed += result.totalProcessed
           totalSyncedAccounts += result.syncedAccounts || 0
-          
-          // Collect account IDs from this connection
-          if (result.accountIds) {
-            allCurrentAccountIds = [...allCurrentAccountIds, ...result.accountIds]
-          }
         } else {
           errors.push(result.error || 'Unknown sync error')
         }
