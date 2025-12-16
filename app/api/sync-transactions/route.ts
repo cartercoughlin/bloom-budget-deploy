@@ -23,7 +23,39 @@ export async function POST() {
     }
 
     if (!plaidItems || plaidItems.length === 0) {
-      return NextResponse.json({ error: 'No connected accounts found. Please connect a bank account first.' }, { status: 400 })
+      // No Plaid connections - clean up all Plaid data
+      console.log('No Plaid connections found. Cleaning up all Plaid data...')
+      
+      // Remove all transactions with Plaid IDs
+      const { error: txCleanupError } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('user_id', user.id)
+        .not('plaid_transaction_id', 'is', null)
+      
+      if (txCleanupError) {
+        console.error('Error cleaning up Plaid transactions:', txCleanupError)
+      }
+      
+      // Remove all account balances with Plaid IDs
+      const { error: balanceCleanupError } = await supabase
+        .from('account_balances')
+        .delete()
+        .eq('user_id', user.id)
+        .not('plaid_account_id', 'is', null)
+      
+      if (balanceCleanupError) {
+        console.error('Error cleaning up Plaid balances:', balanceCleanupError)
+      }
+      
+      return NextResponse.json({ 
+        success: true,
+        message: 'All Plaid data cleaned up. Connect a bank account to sync transactions.',
+        newTransactions: 0,
+        updatedTransactions: 0,
+        totalProcessed: 0,
+        syncedAccounts: 0
+      })
     }
 
     // Get all current account IDs from all active Plaid connections
