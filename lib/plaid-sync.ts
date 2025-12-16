@@ -241,6 +241,19 @@ export async function syncPlaidTransactions(accessToken: string, options?: { syn
   }
 }
 
+// Helper function to normalize descriptions for better duplicate detection
+function normalizeDescription(description: string): string {
+  return description
+    .toLowerCase()
+    .trim()
+    // Replace multiple spaces with single space
+    .replace(/\s+/g, ' ')
+    // Remove common special characters that might vary between transactions
+    .replace(/[^\w\s]/g, '')
+    // Trim again after replacements
+    .trim()
+}
+
 async function syncTransactionsForAccounts(accessToken: string, accounts: any[], userId: string, syncedAccountsCount: number, institutionName: string): Promise<SyncResult> {
   const supabase = await createClient()
 
@@ -251,7 +264,7 @@ async function syncTransactionsForAccounts(accessToken: string, accounts: any[],
   // Get existing transactions from last 35 days to avoid duplicates
   const lookbackDate = new Date()
   lookbackDate.setDate(lookbackDate.getDate() - 35)
-  
+
   const { data: existingTransactions } = await supabase
     .from('transactions')
     .select('id, plaid_transaction_id, date, description, amount, bank')
@@ -261,16 +274,21 @@ async function syncTransactionsForAccounts(accessToken: string, accounts: any[],
   // Create multiple lookup maps for robust deduplication
   const existingByPlaidId = new Map<string, any>()
   const existingByFingerprint = new Map<string, any>()
-  
+  const existingByNormalizedFingerprint = new Map<string, any>()
+
   existingTransactions?.forEach(t => {
     // Plaid ID lookup (primary)
     if (t.plaid_transaction_id) {
       existingByPlaidId.set(t.plaid_transaction_id, t)
     }
-    
-    // Fingerprint lookup (fallback) - date + description + amount + bank
+
+    // Exact fingerprint lookup (fallback #1) - date + description + amount + bank
     const fingerprint = `${t.date}_${t.description.toLowerCase().trim()}_${t.amount}_${t.bank}`
     existingByFingerprint.set(fingerprint, t)
+
+    // Normalized fingerprint lookup (fallback #2) - handles variations in spacing and special characters
+    const normalizedFingerprint = `${t.date}_${normalizeDescription(t.description)}_${t.amount}_${t.bank.toLowerCase().trim()}`
+    existingByNormalizedFingerprint.set(normalizedFingerprint, t)
   })
 
   let newCount = 0
@@ -319,20 +337,26 @@ async function syncTransactionsForAccounts(accessToken: string, accounts: any[],
       bankName = institutionName || 'Bank'
     }
 
-    // Create transaction fingerprint for deduplication
+    // Create transaction fingerprints for deduplication
     const fingerprint = `${transaction.date}_${transaction.name.toLowerCase().trim()}_${Math.abs(transaction.amount)}_${bankName}`
-    
+    const normalizedFingerprint = `${transaction.date}_${normalizeDescription(transaction.name)}_${Math.abs(transaction.amount)}_${bankName.toLowerCase().trim()}`
+
     // Check for existing transaction using multiple methods
     let existingTransaction = null
-    
+
     // Method 1: Check by Plaid transaction ID (most reliable)
     if (transaction.transaction_id) {
       existingTransaction = existingByPlaidId.get(transaction.transaction_id)
     }
-    
-    // Method 2: Check by fingerprint (fallback for duplicate detection)
+
+    // Method 2: Check by exact fingerprint (fallback for duplicate detection)
     if (!existingTransaction) {
       existingTransaction = existingByFingerprint.get(fingerprint)
+    }
+
+    // Method 3: Check by normalized fingerprint (handles variations in spacing and special characters)
+    if (!existingTransaction) {
+      existingTransaction = existingByNormalizedFingerprint.get(normalizedFingerprint)
     }
     
     if (existingTransaction) {
@@ -372,13 +396,29 @@ async function syncTransactionsForAccounts(accessToken: string, accounts: any[],
     }
 
     console.log('Inserting new transaction:', transactionData)
-    const { error: insertError } = await supabase.from('transactions').insert(transactionData)
-    
+    const { data: insertedData, error: insertError } = await supabase.from('transactions').insert(transactionData).select('id')
+
     if (insertError) {
       console.error('Transaction insert error:', insertError)
     } else {
       newCount++
       console.log('Successfully inserted transaction')
+
+      // Add to lookup maps to prevent duplicates within this sync batch
+      const newTransaction = {
+        id: insertedData?.[0]?.id,
+        plaid_transaction_id: transaction.transaction_id,
+        date: transaction.date,
+        description: transactionData.description,
+        amount: transactionData.amount,
+        bank: bankName
+      }
+
+      if (transaction.transaction_id) {
+        existingByPlaidId.set(transaction.transaction_id, newTransaction)
+      }
+      existingByFingerprint.set(fingerprint, newTransaction)
+      existingByNormalizedFingerprint.set(normalizedFingerprint, newTransaction)
     }
     processedCount++
   }

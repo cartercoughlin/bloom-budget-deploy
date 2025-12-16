@@ -206,6 +206,33 @@ Run `scripts/017_add_recurring_to_transactions.sql` in Supabase to add the recur
 
 ### Bug Fixes
 
+**2025-12-16: Fixed budget and dashboard sync issues**
+- Converted budgets page from server-side to client-side rendering
+- Budget data now automatically refreshes when navigating between tabs
+- Dashboard and budgets page now always show consistent spending totals
+- Added intelligent data caching for instant page loads
+- Both pages now use identical calculation logic for budget percentages
+- File modified:
+  - `app/(app)/budgets/page.tsx` - Converted to client component with caching
+
+**2025-12-16: Improved transaction deduplication logic**
+- Enhanced duplicate detection to handle variations in transaction names
+- Added normalized fingerprint matching that ignores:
+  - Multiple spaces vs single spaces (e.g., "OURA  RING" vs "OURA RING")
+  - Special characters (e.g., "OURA-RING" vs "OURA RING")
+  - Case variations (handled by existing lowercase normalization)
+- Implemented three-level deduplication check:
+  1. Plaid transaction ID (most reliable, primary method)
+  2. Exact fingerprint match (date + description + amount + bank)
+  3. Normalized fingerprint match (handles spacing/special character variations)
+- Updated cleanup script to use same normalized matching for existing duplicates
+- Prevents duplicates within the same sync batch by updating lookup maps
+- Files modified:
+  - `lib/plaid-sync.ts` - Added `normalizeDescription()` helper and three-level duplicate detection
+  - `scripts/002_cleanup_duplicates.sql` - Updated to use normalized regex matching
+- Files created:
+  - `find-oura-duplicates.sql` - Query to identify duplicate transactions for debugging
+
 **2025-12-15: Fixed category suggestions running in infinite loop**
 - Category suggestions were being fetched repeatedly on every render
 - Removed `description` and `amount` from useEffect dependency array
