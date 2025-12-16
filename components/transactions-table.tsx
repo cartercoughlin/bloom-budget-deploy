@@ -415,7 +415,10 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <span className="font-medium text-sm md:text-base truncate">
+                            <span
+                              className="font-medium text-sm md:text-base truncate"
+                              title={tx.merchant_name && tx.description !== tx.merchant_name ? tx.description : undefined}
+                            >
                               {tx.merchant_name || tx.description}
                             </span>
                             {tx.recurring && (
@@ -491,6 +494,9 @@ export function TransactionsTable({ transactions: initialTransactions, categorie
                 )}
                 <div className="flex-1">
                   <h3 className="font-medium">{selectedTransaction.merchant_name || selectedTransaction.description}</h3>
+                  {selectedTransaction.merchant_name && selectedTransaction.description !== selectedTransaction.merchant_name && (
+                    <p className="text-sm text-muted-foreground">{selectedTransaction.description}</p>
+                  )}
                   <p className="text-sm text-muted-foreground">{selectedTransaction.bank}</p>
                 </div>
                 <div className={`text-lg font-semibold ${
