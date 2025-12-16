@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS public.transactions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   plaid_transaction_id TEXT,
+  plaid_account_id TEXT,
   date DATE NOT NULL,
   description TEXT NOT NULL,
   amount NUMERIC(10, 2) NOT NULL,
@@ -114,6 +115,7 @@ CREATE TABLE IF NOT EXISTS public.account_balances (
   account_name TEXT NOT NULL,
   account_type TEXT NOT NULL CHECK (account_type IN ('checking', 'savings', 'liability')),
   balance NUMERIC(12, 2) NOT NULL,
+  plaid_account_id TEXT,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   UNIQUE(user_id, account_name)
@@ -153,13 +155,24 @@ CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON public.transactions(user_
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON public.transactions(date);
 CREATE INDEX IF NOT EXISTS idx_transactions_category_id ON public.transactions(category_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_plaid_id ON public.transactions(plaid_transaction_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_plaid_account_id ON public.transactions(user_id, plaid_account_id);
 CREATE INDEX IF NOT EXISTS idx_categories_user_id ON public.categories(user_id);
 CREATE INDEX IF NOT EXISTS idx_budgets_user_id ON public.budgets(user_id);
 CREATE INDEX IF NOT EXISTS idx_budgets_month_year ON public.budgets(month, year);
 CREATE INDEX IF NOT EXISTS idx_category_rules_user_id ON public.category_rules(user_id);
 CREATE INDEX IF NOT EXISTS idx_category_rules_priority ON public.category_rules(priority DESC);
 CREATE INDEX IF NOT EXISTS idx_account_balances_user_id ON public.account_balances(user_id);
+CREATE INDEX IF NOT EXISTS idx_account_balances_plaid_id ON public.account_balances(user_id, plaid_account_id);
 CREATE INDEX IF NOT EXISTS idx_plaid_items_user_id ON public.plaid_items(user_id);
+
+-- Add unique constraints for Plaid data
+CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_unique_plaid_id 
+ON public.transactions (user_id, plaid_transaction_id) 
+WHERE plaid_transaction_id IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_account_balances_unique_plaid 
+ON public.account_balances (user_id, plaid_account_id) 
+WHERE plaid_account_id IS NOT NULL;
 
 -- Add comments for documentation
 COMMENT ON TABLE public.transactions IS 'User transactions with Plaid integration support';
