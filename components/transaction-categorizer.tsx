@@ -76,20 +76,6 @@ export function TransactionCategorizer({
     }
   }
 
-  const handleSelectOpen = () => {
-    setHasInteracted(true)
-    if (!currentCategoryId && suggestions.length === 0) {
-      fetchSuggestions()
-    }
-  }
-
-  const handleCategorySelectWithStopPropagation = (categoryId: string) => {
-    // Prevent the modal from opening after category selection
-    setTimeout(() => {
-      handleCategorySelect(categoryId)
-    }, 0)
-  }
-
   const handleCategorySelect = async (categoryId: string) => {
     if (!transactionId || transactionId === 'undefined' || transactionId === 'null') {
       console.error('Invalid transaction ID:', transactionId)
@@ -214,7 +200,14 @@ export function TransactionCategorizer({
             </div>
           )}
 
-          <Select onValueChange={handleCategorySelectWithStopPropagation} onOpenChange={(open) => open && handleSelectOpen()}>
+          <Select onValueChange={handleCategorySelect} onOpenChange={(open) => {
+            if (open) {
+              setHasInteracted(true)
+              if (!currentCategoryId && suggestions.length === 0) {
+                fetchSuggestions()
+              }
+            }
+          }}>
             <SelectTrigger className="h-8 text-xs" onClick={(e) => e.stopPropagation()}>
               <SelectValue placeholder="Select category..." />
             </SelectTrigger>
