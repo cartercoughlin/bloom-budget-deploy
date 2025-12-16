@@ -34,20 +34,22 @@ export async function POST(request: Request) {
     }
     const accountsResponse = await plaidClient.accountsGet(accountsRequest)
     const accounts = accountsResponse.data.accounts
+    const institutionId = accountsResponse.data.item.institution_id
 
-    console.log('Found accounts:', accounts.map(acc => ({ 
-      name: acc.name, 
-      type: acc.type, 
+    console.log('Found accounts:', accounts.map(acc => ({
+      name: acc.name,
+      type: acc.type,
       subtype: acc.subtype,
-      official_name: acc.official_name 
+      official_name: acc.official_name
     })))
+    console.log('Institution ID:', institutionId)
 
     // Get institution name using institution_id
     let institutionName = 'Connected Account'
-    if (accounts.length > 0 && accounts[0].institution_id) {
+    if (institutionId) {
       try {
         const institutionRequest: InstitutionsGetByIdRequest = {
-          institution_id: accounts[0].institution_id,
+          institution_id: institutionId,
           country_codes: ['US'],
         }
         const institutionResponse = await plaidClient.institutionsGetById(institutionRequest)
@@ -55,7 +57,11 @@ export async function POST(request: Request) {
         console.log('Institution name:', institutionName)
       } catch (error) {
         console.error('Failed to get institution name:', error)
-        institutionName = accounts[0]?.official_name || accounts[0]?.name || 'Connected Account'
+        // Fallback to cleaned institution ID
+        institutionName = institutionId.replace('ins_', '').replace(/_/g, ' ').split(' ').map(word =>
+          word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        ).join(' ')
+        console.log('Using fallback institution name:', institutionName)
       }
     }
 

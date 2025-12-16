@@ -1,10 +1,11 @@
 import { plaidClient } from './plaid'
 import { createClient } from '@/lib/supabase/server'
-import { 
-  TransactionsGetRequest, 
+import {
+  TransactionsGetRequest,
   AccountsGetRequest,
   TransactionsGetResponse,
-  AccountsGetResponse 
+  AccountsGetResponse,
+  InstitutionsGetByIdRequest
 } from 'plaid'
 
 export interface SyncResult {
@@ -55,8 +56,35 @@ export async function syncPlaidTransactions(accessToken: string, options?: { syn
     }
     const accountsResponse: AccountsGetResponse = await plaidClient.accountsGet(accountsRequest)
     const accounts = accountsResponse.data.accounts
-    const institutionName = accountsResponse.data.item.institution_id
+    const institutionId = accountsResponse.data.item.institution_id
+    const itemId = accountsResponse.data.item.item_id
     console.log('Found accounts:', accounts.length)
+    console.log('Institution ID:', institutionId)
+
+    // Get proper institution name from Plaid
+    let institutionName = institutionId
+    try {
+      const institutionRequest: InstitutionsGetByIdRequest = {
+        institution_id: institutionId,
+        country_codes: ['US'],
+      }
+      const institutionResponse = await plaidClient.institutionsGetById(institutionRequest)
+      institutionName = institutionResponse.data.institution.name
+      console.log('Institution name:', institutionName)
+
+      // Update plaid_items with correct institution name
+      await supabase
+        .from('plaid_items')
+        .update({ institution_name: institutionName })
+        .eq('user_id', user.id)
+        .eq('access_token', accessToken)
+    } catch (error) {
+      console.error('Failed to get/update institution name:', error)
+      // Use fallback naming
+      institutionName = institutionId?.replace('ins_', '').replace(/_/g, ' ').split(' ').map(word =>
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+      ).join(' ') || 'Bank'
+    }
 
     // Sync account balances only if enabled
     let syncedAccountsCount = 0
@@ -178,7 +206,7 @@ export async function syncPlaidTransactions(accessToken: string, options?: { syn
     // Sync transactions only if enabled
     if (syncTransactions) {
       console.log('Syncing transactions...')
-      const result = await syncTransactionsForAccounts(accessToken, accounts, user.id, syncedAccountsCount)
+      const result = await syncTransactionsForAccounts(accessToken, accounts, user.id, syncedAccountsCount, institutionName)
       return {
         ...result,
         accountIds: accounts.map(acc => acc.account_id)
@@ -213,14 +241,9 @@ export async function syncPlaidTransactions(accessToken: string, options?: { syn
   }
 }
 
-async function syncTransactionsForAccounts(accessToken: string, accounts: any[], userId: string, syncedAccountsCount: number): Promise<SyncResult> {
+async function syncTransactionsForAccounts(accessToken: string, accounts: any[], userId: string, syncedAccountsCount: number, institutionName: string): Promise<SyncResult> {
   const supabase = await createClient()
-  
-  // Get institution info for better bank names
-  const accountsRequest: AccountsGetRequest = { access_token: accessToken }
-  const accountsResponse: AccountsGetResponse = await plaidClient.accountsGet(accountsRequest)
-  const institutionId = accountsResponse.data.item.institution_id
-  
+
   // Get existing categories
   const { data: categories } = await supabase.from('categories').select('id, name').eq('user_id', userId)
   const categoryMap = new Map(categories?.map(c => [c.name.toLowerCase(), c.id]) || [])
@@ -292,10 +315,8 @@ async function syncTransactionsForAccounts(accessToken: string, accounts: any[],
                           normalizedBankName === 'unknown'
 
     if (isGenericName) {
-      // Clean up institution ID (remove ins_ prefix and capitalize)
-      bankName = institutionId?.replace('ins_', '').replace(/_/g, ' ').split(' ').map(word =>
-        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-      ).join(' ') || 'Bank'
+      // Use the institution name we already fetched
+      bankName = institutionName || 'Bank'
     }
 
     // Create transaction fingerprint for deduplication
