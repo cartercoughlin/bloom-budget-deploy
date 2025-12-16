@@ -91,20 +91,29 @@ export async function syncPlaidTransactions(accessToken: string, options?: { syn
 
         console.log('Syncing account:', accountName, 'Balance:', balance)
 
-        const { error: upsertError } = await supabase
+        // Delete existing record for this plaid account, then insert new one
+        await supabase
           .from('account_balances')
-          .upsert({
+          .delete()
+          .eq('user_id', user.id)
+          .eq('plaid_account_id', account.account_id)
+
+        const { data, error: insertError } = await supabase
+          .from('account_balances')
+          .insert({
             user_id: user.id,
             account_name: accountName,
             account_type: accountType,
             balance: balance,
             plaid_account_id: account.account_id,
             updated_at: new Date().toISOString(),
-          }, {
-            onConflict: 'user_id,plaid_account_id'
           })
+          .select()
 
-        if (!upsertError) {
+        if (insertError) {
+          console.error('Account balance insert error:', insertError)
+        } else {
+          console.log('Successfully synced account balance:', data)
           syncedAccountsCount++
         }
       }
@@ -220,7 +229,8 @@ async function syncTransactionsForAccounts(accessToken: string, accounts: any[],
     // Create better bank name
     let bankName = account?.name || 'Unknown'
     if (bankName === 'Connected Account' || bankName === 'Account' || !bankName) {
-      bankName = institutionId || 'Bank'
+      const cleanInstitutionId = institutionId?.replace('ins_', '') || 'Bank'
+      bankName = cleanInstitutionId
     }
     
     // Create transaction fingerprint for deduplication
