@@ -261,9 +261,10 @@ async function syncTransactionsForAccounts(accessToken: string, accounts: any[],
   const { data: categories } = await supabase.from('categories').select('id, name').eq('user_id', userId)
   const categoryMap = new Map(categories?.map(c => [c.name.toLowerCase(), c.id]) || [])
 
-  // Get existing transactions from last 35 days to avoid duplicates
+  // Get existing transactions from last 90 days to avoid duplicates
+  // Extended to 90 days to catch older categorized transactions
   const lookbackDate = new Date()
-  lookbackDate.setDate(lookbackDate.getDate() - 35)
+  lookbackDate.setDate(lookbackDate.getDate() - 90)
 
   const { data: existingTransactions } = await supabase
     .from('transactions')
@@ -347,6 +348,24 @@ async function syncTransactionsForAccounts(accessToken: string, accounts: any[],
     // Method 1: Check by Plaid transaction ID (most reliable)
     if (transaction.transaction_id) {
       existingTransaction = existingByPlaidId.get(transaction.transaction_id)
+
+      // If not in cache, check database directly for plaid_transaction_id
+      // This catches transactions older than the lookback period
+      if (!existingTransaction) {
+        const { data: dbMatch } = await supabase
+          .from('transactions')
+          .select('id, plaid_transaction_id, date, description, amount, bank')
+          .eq('user_id', userId)
+          .eq('plaid_transaction_id', transaction.transaction_id)
+          .limit(1)
+          .single()
+
+        if (dbMatch) {
+          existingTransaction = dbMatch
+          // Add to cache for future lookups in this batch
+          existingByPlaidId.set(transaction.transaction_id, dbMatch)
+        }
+      }
     }
 
     // Method 2: Check by exact fingerprint (fallback for duplicate detection)
