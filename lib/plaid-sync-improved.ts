@@ -47,6 +47,7 @@ export async function syncAccountBalances(accessToken: string, userId: string): 
         }
 
         console.log(`💰 Syncing: ${accountName} (${accountType}) = $${balance}`)
+        console.log(`   Plaid Account ID: ${account.account_id}`)
 
         // Check if account already exists by plaid_account_id
         const { data: existingAccounts } = await supabase
