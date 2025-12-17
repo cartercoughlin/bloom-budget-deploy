@@ -19,13 +19,16 @@ export default function AccountsPage() {
   useEffect(() => {
     const loadBalances = async () => {
       try {
-        const supabase = createClient()
-        const { data } = await supabase
-          .from('account_balances')
-          .select('account_name, account_type, balance')
-          .order('balance', { ascending: false })
+        // Use the API endpoint which has proper filtering logic
+        const response = await fetch('/api/account-balances')
+        if (!response.ok) {
+          throw new Error('Failed to fetch account balances')
+        }
+        const data = await response.json()
 
-        setBalances(data || [])
+        // Sort by balance descending
+        const sortedData = (data || []).sort((a: AccountBalance, b: AccountBalance) => b.balance - a.balance)
+        setBalances(sortedData)
       } catch (error) {
         console.error('Error loading balances:', error)
       } finally {

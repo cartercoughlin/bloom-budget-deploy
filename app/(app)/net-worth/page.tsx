@@ -12,13 +12,66 @@ export default async function NetWorthPage() {
     redirect("/auth/login")
   }
 
-  // Get all account balances
-  const { data: accounts } = await supabase
+  // Get all account balances from database
+  const { data: allAccounts } = await supabase
     .from("account_balances")
-    .select("account_name, account_type, balance")
+    .select("account_name, account_type, balance, plaid_account_id")
     .eq("user_id", user.id)
-    .order("account_type", { ascending: true })
-    .order("balance", { ascending: false })
+
+  // Filter accounts based on sync settings (same logic as API endpoint)
+  let accounts: Array<{ account_name: string; account_type: string; balance: number }> = []
+
+  if (allAccounts && allAccounts.length > 0) {
+    const plaidAccountIds = allAccounts.filter(acc => acc.plaid_account_id).map(acc => acc.plaid_account_id)
+
+    if (plaidAccountIds.length > 0) {
+      // Get Plaid items with their sync settings
+      const { data: plaidItems } = await supabase
+        .from('plaid_items')
+        .select('access_token, sync_balances')
+        .eq('user_id', user.id)
+
+      if (plaidItems && plaidItems.length > 0) {
+        // Build set of active account IDs from items with sync_balances enabled
+        const { plaidClient } = await import('@/lib/plaid')
+        const activeAccountIds = new Set<string>()
+
+        for (const item of plaidItems.filter(i => i.sync_balances)) {
+          try {
+            const response = await plaidClient.accountsGet({ access_token: item.access_token })
+            response.data.accounts.forEach(acc => activeAccountIds.add(acc.account_id))
+          } catch (err) {
+            console.error('Error fetching accounts for filtering:', err)
+          }
+        }
+
+        // Filter accounts: include manual accounts and plaid accounts from synced connections
+        accounts = allAccounts.filter(acc => {
+          if (!acc.plaid_account_id) {
+            return true // Always include manual accounts
+          }
+          // Include Plaid accounts that are active OR if we have sync enabled but couldn't fetch
+          return activeAccountIds.size === 0 ?
+            plaidItems.some(i => i.sync_balances) :
+            activeAccountIds.has(acc.plaid_account_id!)
+        })
+      } else {
+        // No plaid items, only show manual accounts
+        accounts = allAccounts.filter(acc => !acc.plaid_account_id)
+      }
+    } else {
+      // No plaid accounts, show all
+      accounts = allAccounts
+    }
+
+    // Sort by account type, then balance
+    accounts.sort((a, b) => {
+      if (a.account_type !== b.account_type) {
+        return a.account_type.localeCompare(b.account_type)
+      }
+      return b.balance - a.balance
+    })
+  }
 
   // Calculate totals by type
   let totalAssets = 0
