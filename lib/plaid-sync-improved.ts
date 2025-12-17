@@ -48,21 +48,45 @@ export async function syncAccountBalances(accessToken: string, userId: string): 
 
         console.log(`💰 Syncing: ${accountName} (${accountType}) = $${balance}`)
 
-        // Use upsert pattern to handle conflicts
-        const { data, error } = await supabase
+        // Check if account already exists by plaid_account_id
+        const { data: existingAccounts } = await supabase
           .from('account_balances')
-          .upsert({
-            user_id: userId,
-            account_name: accountName,
-            account_type: accountType,
-            balance: balance,
-            plaid_account_id: account.account_id,
-            updated_at: new Date().toISOString(),
-          }, {
-            onConflict: 'user_id,plaid_account_id',
-            ignoreDuplicates: false
-          })
-          .select()
+          .select('id')
+          .eq('user_id', userId)
+          .eq('plaid_account_id', account.account_id)
+          .limit(1)
+
+        let result
+        if (existingAccounts && existingAccounts.length > 0) {
+          // Update existing account
+          console.log(`🔄 Updating existing account: ${accountName}`)
+          result = await supabase
+            .from('account_balances')
+            .update({
+              account_name: accountName,
+              account_type: accountType,
+              balance: balance,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existingAccounts[0].id)
+            .select()
+        } else {
+          // Insert new account
+          console.log(`➕ Inserting new account: ${accountName}`)
+          result = await supabase
+            .from('account_balances')
+            .insert({
+              user_id: userId,
+              account_name: accountName,
+              account_type: accountType,
+              balance: balance,
+              plaid_account_id: account.account_id,
+              updated_at: new Date().toISOString(),
+            })
+            .select()
+        }
+
+        const { data, error } = result
 
         if (error) {
           console.error(`❌ Error syncing account ${accountName}:`, error)

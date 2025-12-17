@@ -24,45 +24,57 @@ export async function GET() {
 
     // Filter accounts based on sync settings
     // Manual accounts (no plaid_account_id) should always be shown
-    // Plaid accounts should only be shown if they're from an active connection with sync_balances enabled
+    // Plaid accounts should only be shown if they're from a connection with sync_balances enabled
     if (accounts && accounts.length > 0) {
       const plaidAccountIds = accounts
         .filter(acc => acc.plaid_account_id)
         .map(acc => acc.plaid_account_id)
 
       if (plaidAccountIds.length > 0) {
-        // Get active plaid items with sync_balances enabled
+        // Get Plaid items and their sync settings
         const { data: plaidItems } = await supabase
           .from('plaid_items')
           .select('access_token, sync_balances')
           .eq('user_id', user.id)
-          .eq('sync_balances', true)
 
-        // Get account IDs from active connections with sync enabled
         if (plaidItems && plaidItems.length > 0) {
+          // Build a set of account IDs from items with sync_balances enabled
           const { plaidClient } = await import('@/lib/plaid')
           const activeAccountIds = new Set<string>()
 
-          for (const item of plaidItems) {
+          for (const item of plaidItems.filter(i => i.sync_balances)) {
             try {
               const response = await plaidClient.accountsGet({ access_token: item.access_token })
               response.data.accounts.forEach(acc => activeAccountIds.add(acc.account_id))
             } catch (err) {
               console.error('Error fetching accounts for filtering:', err)
+              // Continue to show existing accounts even if API call fails
             }
           }
 
-          // Filter accounts: include manual accounts and plaid accounts from active synced connections
-          const filteredAccounts = accounts.filter(acc =>
-            !acc.plaid_account_id || activeAccountIds.has(acc.plaid_account_id)
-          )
+          // Filter accounts: include manual accounts and plaid accounts from synced connections
+          // If we couldn't fetch active accounts from Plaid API, include all accounts from DB
+          // This prevents accounts from disappearing if there's a temporary API issue
+          const filteredAccounts = accounts.filter(acc => {
+            if (!acc.plaid_account_id) {
+              // Always include manual accounts
+              return true
+            }
+
+            // For Plaid accounts, include if:
+            // 1. They're in the active account IDs from Plaid API
+            // 2. OR we have any Plaid items with sync enabled (to handle API failures)
+            return activeAccountIds.size === 0 ?
+              plaidItems.some(i => i.sync_balances) :
+              activeAccountIds.has(acc.plaid_account_id)
+          })
 
           return NextResponse.json(filteredAccounts)
         }
       }
     }
 
-    // If no plaid accounts or no active connections, just return all accounts (manual ones)
+    // If no plaid accounts, just return all accounts (manual ones)
     return NextResponse.json(accounts?.filter(acc => !acc.plaid_account_id) || [])
   } catch (error) {
     console.error('API error:', error)
