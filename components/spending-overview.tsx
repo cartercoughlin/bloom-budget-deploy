@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingDown, TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react"
+import { PrivateAmount } from "./private-amount"
 
 interface Transaction {
   amount: number
@@ -57,7 +58,7 @@ export function SpendingOverview({ transactions, budgets }: SpendingOverviewProp
           <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
         </CardHeader>
         <CardContent className="pb-2 md:pb-6">
-          <div className="text-xl md:text-3xl font-bold text-blue-600">${totalBudget.toFixed(2)}</div>
+          <PrivateAmount amount={totalBudget} className="text-xl md:text-3xl font-bold text-blue-600" />
           <p className="text-xs md:text-sm text-muted-foreground">Monthly allocation</p>
         </CardContent>
       </Card>
@@ -68,7 +69,7 @@ export function SpendingOverview({ transactions, budgets }: SpendingOverviewProp
           <ArrowUpRight className="h-4 w-4 md:h-5 md:w-5 text-orange-600" />
         </CardHeader>
         <CardContent className="pb-2 md:pb-6">
-          <div className="text-xl md:text-3xl font-bold text-orange-600">${totalExpenses.toFixed(2)}</div>
+          <PrivateAmount amount={totalExpenses} className="text-xl md:text-3xl font-bold text-orange-600" />
           <p className="text-xs md:text-sm text-muted-foreground">
             {budgetUsedPercentage > 0 ? `${budgetUsedPercentage.toFixed(0)}% of budget` : "No spending"}
           </p>
@@ -85,10 +86,11 @@ export function SpendingOverview({ transactions, budgets }: SpendingOverviewProp
           )}
         </CardHeader>
         <CardContent className="pb-2 md:pb-6">
-          <div className={`text-xl md:text-3xl font-bold ${budgetRemaining >= 0 ? "text-green-600" : "text-red-600"}`}>
-            {budgetRemaining >= 0 ? "$" : "-$"}
-            {Math.abs(budgetRemaining).toFixed(2)}
-          </div>
+          <PrivateAmount
+            amount={Math.abs(budgetRemaining)}
+            prefix={budgetRemaining >= 0 ? "$" : "-$"}
+            className={`text-xl md:text-3xl font-bold ${budgetRemaining >= 0 ? "text-green-600" : "text-red-600"}`}
+          />
           <p className="text-xs md:text-sm text-muted-foreground">
             {budgetRemaining >= 0 ? "Available to spend" : "Over budget"}
           </p>
