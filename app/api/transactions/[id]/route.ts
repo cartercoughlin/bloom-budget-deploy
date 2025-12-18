@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -17,7 +17,18 @@ export async function DELETE(
       )
     }
 
-    const transactionId = params.id
+    const { id: transactionId } = await params
+
+    // Validate transactionId is not undefined/null string
+    if (!transactionId || transactionId === 'undefined' || transactionId === 'null') {
+      console.error('Invalid transaction ID:', transactionId)
+      return NextResponse.json(
+        { error: 'Invalid transaction ID' },
+        { status: 400 }
+      )
+    }
+
+    console.log('Deleting transaction:', transactionId, 'for user:', user.id)
 
     // Verify the transaction belongs to the user before deleting
     const { data: transaction, error: fetchError } = await supabase
@@ -56,6 +67,7 @@ export async function DELETE(
       )
     }
 
+    console.log('Transaction soft-deleted successfully:', transactionId)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Delete transaction error:', error)
