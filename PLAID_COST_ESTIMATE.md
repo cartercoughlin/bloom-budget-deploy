@@ -54,9 +54,15 @@ Based on the codebase analysis and Plaid's 2025 pricing, your monthly Plaid cost
 
 ### How Plaid Charges
 
-Plaid uses an **Item-based pricing model** for the Transactions product:
-- An "Item" = one institution connection (e.g., one Chase bank connection)
-- If a user connects 3 different banks, that's 3 Items
+Plaid uses a **per-product pricing model** based on API usage:
+
+#### Product Pricing (Actual Plaid Rates)
+- **Auth:** $1.50 per initial call (one-time when connecting account)
+- **Balance:** $0.10 per call (each time you fetch balances)
+- **Transactions:** $0.30 per connected account/month (recurring)
+- **Investments Holdings:** $0.18 per connected account/month
+- **Investments Transactions:** $0.35 per connected account/month
+- **Enrich:** $2.00 per thousand transactions
 
 ### Pricing Tiers
 
@@ -67,13 +73,13 @@ Plaid uses an **Item-based pricing model** for the Transactions product:
 - **Best for:** Development and testing only
 
 #### Pay-as-You-Go (Production)
-- **Cost per Item:** ~$1.50 per Item per month
-- **Minimum Monthly Commitment:** **$500/month** ⚠️
-- **Best for:** Businesses with users, not cost-effective for personal use
-- **Reality Check:** Even with just 1-300 Items, you pay the $500 minimum
+- **Cost:** Based on actual API usage (see product pricing above)
+- **Minimum Monthly Commitment:** Typically **$500/month** (confirm with your invoice)
+- **Best for:** Businesses with users
+- **Reality Check:** May have minimum commitment regardless of usage
 
 #### Custom/Scale Tier (Enterprise)
-- **Cost:** Lower per-Item rates with volume commitments (typically $1.00-$1.20 per Item)
+- **Cost:** Negotiated rates with volume commitments
 - **Minimum:** Higher monthly commitment (likely $1,000-$5,000+)
 - **Best for:** Apps with >1,000 active connections
 
@@ -81,13 +87,24 @@ Plaid uses an **Item-based pricing model** for the Transactions product:
 
 ## Monthly Cost Estimates
 
-### Scenario 1: Personal Use (CURRENT SETUP) ⚠️
+### Scenario 1: Personal Use (CURRENT SETUP)
 - **Users:** 1 (you)
 - **Active Items:** 12 connected accounts
-- **Calculated Cost:** $18/month (12 × $1.50)
-- **Actual Cost:** **$500/month** (minimum commitment)
-- **Cost Efficiency:** Only using 3.6% of what you're paying for
-- **Notes:** This is the pain point of using Plaid Production for personal projects. You're paying for 333 Items but only using 12.
+
+**Calculated Monthly Costs:**
+- **Transactions product:** 12 accounts × $0.30 = **$3.60/month**
+- **Balance syncs:**
+  - Manual/monthly: 12 × 1 × $0.10 = **$1.20/month**
+  - Weekly syncs: 12 × 4 × $0.10 = **$4.80/month**
+  - Daily syncs: 12 × 30 × $0.10 = **$36/month**
+- **Auth (one-time):** 12 × $1.50 = **$18** (already paid when connecting accounts)
+
+**Calculated Total:** **$5-40/month** (depending on sync frequency)
+
+**⚠️ IMPORTANT:** If you're on pay-as-you-go with a **$500/month minimum**, you're paying the minimum regardless.
+- Check your actual Plaid invoice to confirm if the minimum applies
+- If paying $500/month: You're using only 1-8% of what you're paying for
+- If paying actual usage: You're paying $5-40/month (very reasonable!)
 
 ### Scenario 2: Development/Testing
 - **Users:** Any number
@@ -95,23 +112,28 @@ Plaid uses an **Item-based pricing model** for the Transactions product:
 - **Monthly Cost:** **$0**
 - **Notes:** Perfect for development, but only test data (not real transactions)
 
-### Scenario 3: Small Business (10-100 users with bank connections)
-- **Active Items:** 50-300 (assuming ~2-3 accounts per user)
-- **Calculated Cost:** **$75-$450/month**
-- **Actual Cost:** **$500/month** (still hitting minimum for most ranges)
-- **Break-even:** Need ~334 Items to break even with minimum
+### Scenario 3: Small Business (50-100 users)
+- **Active accounts:** 100-300 connected accounts (assuming ~2-3 per user)
+- **Transactions:** 100-300 × $0.30 = **$30-$90/month**
+- **Balance syncs (weekly):** 100-300 × 4 × $0.10 = **$40-$120/month**
+- **Auth (one-time/new users):** ~$1.50 per new user
+- **Calculated Total:** **$70-$210/month**
+- **If $500 minimum applies:** You pay **$500/month**
+- **Break-even:** ~1,667 accounts to justify $500 minimum
 
-### Scenario 4: Medium User Base (100-500 connected accounts)
-- **Active Items:** 400-800
-- **Estimated Cost:** **$600-$1,200/month**
-- **Calculation:** Items × $1.50/Item
-- **Notes:** Now exceeding minimum, paying actual per-Item rate
+### Scenario 4: Medium Business (200-500 users)
+- **Active accounts:** 400-1,000 connected accounts
+- **Transactions:** 400-1,000 × $0.30 = **$120-$300/month**
+- **Balance syncs (weekly):** 400-1,000 × 4 × $0.10 = **$160-$400/month**
+- **Calculated Total:** **$280-$700/month**
+- **Likely paying:** $500/month minimum (for lower end) or actual usage (for higher end)
 
-### Scenario 4: Large User Base (1,000+ connected accounts)
-- **Active Items:** 1,000+
-- **Estimated Cost:** **$1,500+/month** (pay-as-you-go)
-- **Custom Tier:** Likely **$1.00-$1.20 per Item** with volume discounts
-- **Notes:** Should negotiate custom pricing
+### Scenario 5: Large Scale (1,000+ users)
+- **Active accounts:** 2,000+ connected accounts
+- **Transactions:** 2,000 × $0.30 = **$600+/month**
+- **Balance syncs (weekly):** 2,000 × 4 × $0.10 = **$800+/month**
+- **Calculated Total:** **$1,400+/month**
+- **At this scale:** Negotiate custom/enterprise pricing for discounts
 
 ---
 
@@ -254,18 +276,24 @@ Contact Plaid or check your Plaid Dashboard to see:
 ## Conclusion
 
 ### Your Current Situation (Personal Use)
-- **Active Items:** 12 connected accounts
-- **Calculated Cost:** $18/month
-- **Actual Cost:** **$500/month** (minimum commitment)
-- **Cost Efficiency:** 3.6% - you're paying for 333 Items but only using 12
+- **Active accounts:** 12 connected accounts
+- **Calculated monthly cost:**
+  - Transactions: $3.60/month
+  - Balance syncs: $1.20-$36/month (depending on frequency)
+  - **Total: $5-40/month**
 
-**The Reality:** Plaid's production tier is designed for businesses serving multiple users, not personal use. You're hitting the $500/month minimum regardless of usage.
+**Critical Question:** Are you paying $500/month (minimum) or actual usage ($5-40)?
+- **Check your Plaid invoice** to see if the minimum commitment applies
+- If paying **$500/month**: You're using only 1-8% of what you're paying for (not cost-effective)
+- If paying **$5-40/month**: This is very reasonable for personal use! (cost-effective)
 
-### Cost Breakdown by Scale
-- **Personal use (1 user):** $500/month (minimum) - **not cost-effective**
-- **Small business (50-300 Items):** $500/month (minimum) - break-even at ~334 Items
-- **Medium scale (400-800 Items):** $600-$1,200/month - paying actual per-Item rate
-- **Large scale (1,000+ Items):** $1,500+/month - consider custom tier
+### Cost Breakdown by Scale (With Actual Pricing)
+
+**Assuming weekly balance syncs:**
+- **Personal use (12 accounts):** $5-8/month calculated, **but may pay $500 minimum** ⚠️
+- **Small business (100-300 accounts):** $70-210/month calculated, **likely pay $500 minimum**
+- **Medium scale (400-800 accounts):** $280-560/month - may exceed minimum
+- **Large scale (1,000+ accounts):** $700-1,400+/month - definitely paying actual usage
 
 ### Alternatives for Personal Use
 
